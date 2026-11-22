@@ -1,0 +1,1409 @@
+[
+  {
+    "id": "979727c9-a7aa-74a2-3b0c-8b3e1c2a7562",
+    "kind": "bookBindings",
+    "code": "hot-glue",
+    "label": "چسب گرم (شومیز)",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "چسب گرم (شومیز)",
+      "base": "soft",
+      "factor": 1,
+      "hard": false,
+      "extraSpiral": false
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "9854d5d1-2862-51a9-fc73-d33ffe1d8b41",
+    "kind": "bookBindings",
+    "code": "double-wire",
+    "label": "فنر دوبل",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "فنر دوبل",
+      "base": "spiral",
+      "factor": 1.2,
+      "hard": false,
+      "extraSpiral": false
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "a08645ed-aeb8-fecd-a2ab-2dfbfdfacb9e",
+    "kind": "bookBindings",
+    "code": "spiral",
+    "label": "فنر مارپیچ",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "فنر مارپیچ",
+      "base": "spiral",
+      "factor": 1,
+      "hard": false,
+      "extraSpiral": false
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "4de68fc6-28b6-b274-c0e1-ba62f9c55d51",
+    "kind": "bookBindings",
+    "code": "staple",
+    "label": "منگنه تخت",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "منگنه تخت",
+      "base": "soft",
+      "factor": 0.45,
+      "hard": false,
+      "extraSpiral": false
+    },
+    "displayOrder": 3,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "b8571494-3df7-3aae-5ae2-e1643de91769",
+    "kind": "bookBindings",
+    "code": "loop",
+    "label": "منگنه لوپ",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "منگنه لوپ",
+      "base": "soft",
+      "factor": 0.65,
+      "hard": false,
+      "extraSpiral": false
+    },
+    "displayOrder": 4,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "ab298834-1b37-9352-f74c-b96bc057e009",
+    "kind": "bookBindings",
+    "code": "hard-flat",
+    "label": "جلد سخت عطف تخت",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "جلد سخت عطف تخت",
+      "base": "hard",
+      "factor": 1,
+      "hard": true,
+      "extraSpiral": false
+    },
+    "displayOrder": 5,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "977569a6-df2c-ed19-b060-394066ccfe9e",
+    "kind": "bookBindings",
+    "code": "hard-round",
+    "label": "جلد سخت عطف گرد",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "جلد سخت عطف گرد",
+      "base": "hard",
+      "factor": 1.25,
+      "hard": true,
+      "extraSpiral": false
+    },
+    "displayOrder": 6,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "705110b2-038d-4536-e35f-3d3a9777d20f",
+    "kind": "bookBindings",
+    "code": "hard-spiral",
+    "label": "جلد سخت + فنری",
+    "pricingRule": "binding-v1",
+    "metadata": {
+      "label": "جلد سخت + فنری",
+      "base": "hard",
+      "factor": 1,
+      "hard": true,
+      "extraSpiral": true
+    },
+    "displayOrder": 7,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "4ece05c5-666d-c03d-8efa-b854149c1bc8",
+    "kind": "bookPapers",
+    "code": "white70",
+    "label": "تحریر سفید ۷۰ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "تحریر سفید ۷۰ گرم",
+      "grams": 70,
+      "type": "white",
+      "caliper": 0.09
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "99dc9fe5-aee8-545a-bfb0-ab3377728d71",
+    "kind": "bookPapers",
+    "code": "white80",
+    "label": "تحریر سفید ۸۰ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "تحریر سفید ۸۰ گرم",
+      "grams": 80,
+      "type": "white",
+      "caliper": 0.103
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "cee83b29-aba8-5f2c-b245-6a5bf0268691",
+    "kind": "bookPapers",
+    "code": "white100",
+    "label": "تحریر سفید ۱۰۰ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "تحریر سفید ۱۰۰ گرم",
+      "grams": 100,
+      "type": "white",
+      "caliper": 0.128
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "dfd6cf53-e22b-aaaa-5d6c-af83f36b12e1",
+    "kind": "bookPapers",
+    "code": "cream60",
+    "label": "تحریر نخودی ۶۰ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "تحریر نخودی ۶۰ گرم",
+      "grams": 60,
+      "type": "cream",
+      "caliper": 0.1
+    },
+    "displayOrder": 3,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "a5c5416e-f3ff-c889-9344-3293a79e6214",
+    "kind": "bookPapers",
+    "code": "bulky",
+    "label": "بالکی کرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "بالکی کرم",
+      "grams": 60,
+      "type": "cream",
+      "caliper": 0.12
+    },
+    "displayOrder": 4,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "57783b91-6339-76b1-df3b-470120e95827",
+    "kind": "bookPapers",
+    "code": "colored",
+    "label": "تحریر الوان",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "تحریر الوان",
+      "grams": 80,
+      "type": "colored",
+      "caliper": 0.105
+    },
+    "displayOrder": 5,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "77ff9c65-c339-6578-0e62-34204d141988",
+    "kind": "bookPapers",
+    "code": "coated128",
+    "label": "گلاسه براق ۱۲۸ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "گلاسه براق ۱۲۸ گرم",
+      "grams": 128,
+      "type": "coated",
+      "caliper": 0.11
+    },
+    "displayOrder": 6,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "33337abe-bade-0011-4919-32da84264b5c",
+    "kind": "bookPapers",
+    "code": "coated200",
+    "label": "گلاسه براق ۲۰۰ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "گلاسه براق ۲۰۰ گرم",
+      "grams": 200,
+      "type": "coated",
+      "caliper": 0.172
+    },
+    "displayOrder": 7,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "c319c6fa-acb5-de6f-577e-f710c370c5f9",
+    "kind": "bookPapers",
+    "code": "coated250",
+    "label": "گلاسه براق ۲۵۰ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "گلاسه براق ۲۵۰ گرم",
+      "grams": 250,
+      "type": "coated",
+      "caliper": 0.215
+    },
+    "displayOrder": 8,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "19dd3168-b84d-05a1-e6f5-d1ba82db0eec",
+    "kind": "bookPapers",
+    "code": "coated300",
+    "label": "گلاسه براق ۳۰۰ گرم",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "گلاسه براق ۳۰۰ گرم",
+      "grams": 300,
+      "type": "coated",
+      "caliper": 0.258
+    },
+    "displayOrder": 9,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "d0877a8f-f7ea-bde3-0afd-9fb27c251469",
+    "kind": "bookPapers",
+    "code": "label",
+    "label": "کاغذ پشت‌چسب‌دار",
+    "pricingRule": "paper-v1",
+    "metadata": {
+      "label": "کاغذ پشت‌چسب‌دار",
+      "grams": 160,
+      "type": "label",
+      "caliper": 0.18
+    },
+    "displayOrder": 10,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "4d6d8d39-c325-9b26-0a63-7da625dbcff8",
+    "kind": "bookSizes",
+    "code": "raghi",
+    "label": "رقعی استاندارد",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "رقعی استاندارد",
+      "width": 14.5,
+      "height": 21.5,
+      "factor": 1,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "59019d30-da7d-ba34-bbd3-25d2e87b845a",
+    "kind": "bookSizes",
+    "code": "vaziri",
+    "label": "وزیری",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "وزیری",
+      "width": 17,
+      "height": 24,
+      "factor": 1.2,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "381c3712-86fb-f274-842b-63024d9f8ad3",
+    "kind": "bookSizes",
+    "code": "a4",
+    "label": "رحلی",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "رحلی",
+      "width": 21,
+      "height": 29.7,
+      "factor": 1.7,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "f1f62e39-46fb-e387-b20b-b2068dce6ae8",
+    "kind": "bookSizes",
+    "code": "palto",
+    "label": "پالتویی",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "پالتویی",
+      "width": 11,
+      "height": 22,
+      "factor": 0.9,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 3,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "44c8bb63-f1e2-531d-f572-57f72e3448ba",
+    "kind": "bookSizes",
+    "code": "pocket",
+    "label": "جیبی وزیری",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "جیبی وزیری",
+      "width": 12,
+      "height": 17,
+      "factor": 0.8,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 4,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "a4310573-cefd-26d5-9db5-dac739fcdeb5",
+    "kind": "bookSizes",
+    "code": "square21",
+    "label": "خشتی ۲۱ × ۲۱",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "خشتی ۲۱ × ۲۱",
+      "width": 21,
+      "height": 21,
+      "factor": 1.45,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 5,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "c22f83a9-43fc-7cf5-bbfd-7981b0fd7ecd",
+    "kind": "bookSizes",
+    "code": "square16",
+    "label": "خشتی ۱۶ × ۱۶",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "خشتی ۱۶ × ۱۶",
+      "width": 16,
+      "height": 16,
+      "factor": 0.95,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 6,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "f1f19ddb-6162-54ed-1cad-3c597a01f761",
+    "kind": "bookSizes",
+    "code": "square14",
+    "label": "خشتی ۱۴ × ۱۴",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "خشتی ۱۴ × ۱۴",
+      "width": 14,
+      "height": 14,
+      "factor": 0.8,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 7,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "7eaa85cb-774a-21b5-6f4a-9a7c6f415fb0",
+    "kind": "bookSizes",
+    "code": "octavo",
+    "label": "اکتاو ۱۹ × ۱۶",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "اکتاو ۱۹ × ۱۶",
+      "width": 16,
+      "height": 19,
+      "factor": 1,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 8,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "bdfb8d73-e95c-0fac-32e2-073ae8a35416",
+    "kind": "bookSizes",
+    "code": "sultani",
+    "label": "سلطانی",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "سلطانی",
+      "width": 24,
+      "height": 34,
+      "factor": 2.4,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 9,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "57fe8772-5cb6-3e72-a2b2-96713a505681",
+    "kind": "bookSizes",
+    "code": "square30",
+    "label": "خشتی ۳۰ × ۳۰",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "خشتی ۳۰ × ۳۰",
+      "width": 30,
+      "height": 30,
+      "factor": 2.8,
+      "unit": "cm",
+      "isCustom": false,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 10,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "0b501b7f-a8a0-90bb-729a-f1797f279cce",
+    "kind": "bookSizes",
+    "code": "custom",
+    "label": "قطع سفارشی",
+    "pricingRule": "size-factor-v1",
+    "metadata": {
+      "label": "قطع سفارشی",
+      "width": 14.5,
+      "height": 21.5,
+      "factor": 1,
+      "unit": "cm",
+      "isCustom": true,
+      "minWidth": 8,
+      "maxWidth": 45,
+      "minHeight": 8,
+      "maxHeight": 45
+    },
+    "displayOrder": 11,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "a13ff310-dfc6-8288-260d-1e6dead12498",
+    "kind": "coverCoatings",
+    "code": "gloss",
+    "label": "سلفون براق",
+    "pricingRule": "coating-v1",
+    "metadata": {
+      "label": "سلفون براق",
+      "laminated": true,
+      "matte": false
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "00ced0e1-6b5c-5445-e360-33a5339c139a",
+    "kind": "coverCoatings",
+    "code": "matte",
+    "label": "سلفون مات",
+    "pricingRule": "coating-v1",
+    "metadata": {
+      "label": "سلفون مات",
+      "laminated": true,
+      "matte": true
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "a67a7cf8-0cd1-88d9-d761-382137bab004",
+    "kind": "coverCoatings",
+    "code": "none",
+    "label": "بدون سلفون",
+    "pricingRule": "coating-v1",
+    "metadata": {
+      "label": "بدون سلفون",
+      "laminated": false,
+      "matte": false
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "610e71f7-96de-dcaf-eb24-af120cd1df2e",
+    "kind": "coverPapers",
+    "code": "coated300",
+    "label": "گلاسه ۳۰۰ گرم",
+    "pricingRule": "cover-paper-v1",
+    "metadata": {
+      "label": "گلاسه ۳۰۰ گرم",
+      "factor": 1.2
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "f490ed3f-f7f6-6be0-d0a4-2694ef36dd87",
+    "kind": "coverPapers",
+    "code": "coated250",
+    "label": "گلاسه ۲۵۰ گرم",
+    "pricingRule": "cover-paper-v1",
+    "metadata": {
+      "label": "گلاسه ۲۵۰ گرم",
+      "factor": 1
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "c1df8df3-ad59-aa22-ac5d-df049f21f445",
+    "kind": "coverPapers",
+    "code": "coated200",
+    "label": "گلاسه ۲۰۰ گرم",
+    "pricingRule": "cover-paper-v1",
+    "metadata": {
+      "label": "گلاسه ۲۰۰ گرم",
+      "factor": 0.8
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "9afccf74-563e-d324-b75c-56e9d0bda7b4",
+    "kind": "coverPapers",
+    "code": "kraft270",
+    "label": "کرافت ۲۷۰ گرم",
+    "pricingRule": "cover-paper-v1",
+    "metadata": {
+      "label": "کرافت ۲۷۰ گرم",
+      "factor": 1.15
+    },
+    "displayOrder": 3,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "a781793e-7460-001b-86c5-426d65099dbd",
+    "kind": "coverPapers",
+    "code": "plastic",
+    "label": "طلق طرح‌دار",
+    "pricingRule": "cover-paper-v1",
+    "metadata": {
+      "label": "طلق طرح‌دار",
+      "factor": 1.3
+    },
+    "displayOrder": 4,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "db52bdf7-0bc7-202e-a605-ec061ad6824c",
+    "kind": "coverPrints",
+    "code": "front",
+    "label": "چهار رنگ یک رو",
+    "pricingRule": "cover-print-v1",
+    "metadata": {
+      "label": "چهار رنگ یک رو",
+      "factor": 1,
+      "none": false,
+      "plastic": false
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "33aaa555-03c4-ae0f-063d-7f9879aafc5b",
+    "kind": "coverPrints",
+    "code": "both",
+    "label": "چهار رنگ دو رو",
+    "pricingRule": "cover-print-v1",
+    "metadata": {
+      "label": "چهار رنگ دو رو",
+      "factor": 2,
+      "none": false,
+      "plastic": false
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "e1965e7a-d572-ea11-6d78-67badd33a2e2",
+    "kind": "coverPrints",
+    "code": "flap",
+    "label": "چهار رنگ یک رو با لبه برگردان",
+    "pricingRule": "cover-print-v1",
+    "metadata": {
+      "label": "چهار رنگ یک رو با لبه برگردان",
+      "factor": 1.35,
+      "none": false,
+      "plastic": false
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "875cb4eb-8650-18c2-7531-a622df1b7aad",
+    "kind": "coverPrints",
+    "code": "both-flap",
+    "label": "چهار رنگ دو رو با لبه برگردان",
+    "pricingRule": "cover-print-v1",
+    "metadata": {
+      "label": "چهار رنگ دو رو با لبه برگردان",
+      "factor": 2.4,
+      "none": false,
+      "plastic": false
+    },
+    "displayOrder": 3,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "9035cc61-71b6-281b-7df5-05d32a0807d8",
+    "kind": "coverPrints",
+    "code": "none",
+    "label": "بدون جلد",
+    "pricingRule": "cover-print-v1",
+    "metadata": {
+      "label": "بدون جلد",
+      "factor": 0,
+      "none": true,
+      "plastic": false
+    },
+    "displayOrder": 4,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "ad99cb66-f878-a274-c629-c8fe58cf9509",
+    "kind": "coverPrints",
+    "code": "plastic",
+    "label": "طلق",
+    "pricingRule": "cover-print-v1",
+    "metadata": {
+      "label": "طلق",
+      "factor": 0,
+      "none": false,
+      "plastic": true
+    },
+    "displayOrder": 5,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "e50446df-6410-c657-3512-cba485f8c9be",
+    "kind": "finishingServices",
+    "code": "roundCorners",
+    "label": "گوشه گرد",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "گوشه گرد",
+      "matte": false,
+      "hard": false,
+      "rateKey": "roundCorners"
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "824e0338-3842-9a76-e740-ce38dd5b11de",
+    "kind": "finishingServices",
+    "code": "shrink",
+    "label": "شیرینک",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "شیرینک",
+      "matte": false,
+      "hard": false,
+      "rateKey": "shrink"
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "4a581a7a-633f-3d28-e64a-f0a54aa159db",
+    "kind": "finishingServices",
+    "code": "goldFoil",
+    "label": "طلاکوب",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "طلاکوب",
+      "matte": true,
+      "hard": false,
+      "rateKey": "goldFoil"
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "10bf92be-7d64-3f60-63ac-9435959ac73c",
+    "kind": "finishingServices",
+    "code": "silverFoil",
+    "label": "نقره‌کوب",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "نقره‌کوب",
+      "matte": true,
+      "hard": false,
+      "rateKey": "silverFoil"
+    },
+    "displayOrder": 3,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "cec1c180-af57-797a-13ba-1db3fee89450",
+    "kind": "finishingServices",
+    "code": "spotUV",
+    "label": "یووی موضعی",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "یووی موضعی",
+      "matte": true,
+      "hard": false,
+      "rateKey": "spotUV"
+    },
+    "displayOrder": 4,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "1e587d8d-118c-05eb-47db-057b02b09a68",
+    "kind": "finishingServices",
+    "code": "endpaperBw",
+    "label": "آستر بدرقه سیاه و سفید",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "آستر بدرقه سیاه و سفید",
+      "matte": false,
+      "hard": true,
+      "rateKey": "endpaperBw"
+    },
+    "displayOrder": 5,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "ca3c8df8-40a8-563e-1841-7a2ccd8e1dd4",
+    "kind": "finishingServices",
+    "code": "endpaperColor",
+    "label": "آستر بدرقه رنگی",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "آستر بدرقه رنگی",
+      "matte": false,
+      "hard": true,
+      "rateKey": "endpaperColor"
+    },
+    "displayOrder": 6,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "d9c3b65f-bbdf-b666-7a9b-858bc3bc76b3",
+    "kind": "finishingServices",
+    "code": "bookmark",
+    "label": "نشانگر کتاب",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "نشانگر کتاب",
+      "matte": false,
+      "hard": false,
+      "rateKey": "bookmark"
+    },
+    "displayOrder": 7,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "c4e4d3fa-b51e-cdcc-1eff-8403b8b24bc9",
+    "kind": "finishingServices",
+    "code": "coloredEdges",
+    "label": "لبه رنگی",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "لبه رنگی",
+      "matte": false,
+      "hard": false,
+      "rateKey": "coloredEdges"
+    },
+    "displayOrder": 8,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "58318d56-18b9-1843-2b9a-bae611d03cee",
+    "kind": "finishingServices",
+    "code": "metallicEdges",
+    "label": "لبه طلایی / نقره‌ای",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "لبه طلایی / نقره‌ای",
+      "matte": false,
+      "hard": false,
+      "rateKey": "metallicEdges"
+    },
+    "displayOrder": 9,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "eb0b33eb-771c-57c4-a730-5b7592d3a958",
+    "kind": "finishingServices",
+    "code": "bellyBand",
+    "label": "بلی‌بند",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "بلی‌بند",
+      "matte": false,
+      "hard": false,
+      "rateKey": "bellyBand"
+    },
+    "displayOrder": 10,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "e8dcc9c5-16e4-7ccd-93d5-9614e231adca",
+    "kind": "finishingServices",
+    "code": "thickEdges",
+    "label": "لبه رنگی قطور",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "لبه رنگی قطور",
+      "matte": false,
+      "hard": false,
+      "rateKey": "thickEdges"
+    },
+    "displayOrder": 11,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "3967d43d-adb6-a301-b581-d3f8e15de507",
+    "kind": "finishingServices",
+    "code": "hardCoverJacket",
+    "label": "کاور جلد سخت",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "کاور جلد سخت",
+      "matte": false,
+      "hard": true,
+      "rateKey": "hardCoverJacket"
+    },
+    "displayOrder": 12,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "96bb4c5c-faf8-d68e-b20c-4ee15bc988cd",
+    "kind": "finishingServices",
+    "code": "ribbon",
+    "label": "روبان جلد سخت",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "روبان جلد سخت",
+      "matte": false,
+      "hard": true,
+      "rateKey": "ribbon"
+    },
+    "displayOrder": 13,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "85567f5e-4114-9c75-a8da-b2ce723fb7be",
+    "kind": "finishingServices",
+    "code": "laminatedEndpaper",
+    "label": "آستر بدرقه رنگی + سلفون",
+    "pricingRule": "finishing-v1",
+    "metadata": {
+      "label": "آستر بدرقه رنگی + سلفون",
+      "matte": false,
+      "hard": true,
+      "rateKey": "laminatedEndpaper"
+    },
+    "displayOrder": 14,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "e35c2514-3487-a89a-9f46-b66d4879f78a",
+    "kind": "textPrints",
+    "code": "bw-text",
+    "label": "سیاه و سفید (متنی)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "سیاه و سفید (متنی)",
+      "bw": true,
+      "color": false,
+      "bwFactor": 1,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 0,
+    "active": true,
+    "isDefault": true
+  },
+  {
+    "id": "4436f14f-e677-255f-484b-67ed7c478f54",
+    "kind": "textPrints",
+    "code": "bw-image",
+    "label": "سیاه و سفید (مصور)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "سیاه و سفید (مصور)",
+      "bw": true,
+      "color": false,
+      "bwFactor": 1.35,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 1,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "443ffdc2-e3f4-b36c-efe5-1c14e12bc0a0",
+    "kind": "textPrints",
+    "code": "two-color",
+    "label": "دو رنگ",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "دو رنگ",
+      "bw": false,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 0.65,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 2,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "1caa7d4e-77f6-6073-bd3b-85cdaf8f3d1d",
+    "kind": "textPrints",
+    "code": "color-toner",
+    "label": "چهار رنگ (تونری)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "چهار رنگ (تونری)",
+      "bw": false,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "toner"
+    },
+    "displayOrder": 3,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "e17f3d81-3f4a-8289-c10e-d6cd88129273",
+    "kind": "textPrints",
+    "code": "color-ink",
+    "label": "چهار رنگ (مرکبی)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "چهار رنگ (مرکبی)",
+      "bw": false,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 0.9,
+      "noPrint": false,
+      "technology": "ink"
+    },
+    "displayOrder": 4,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "bfcb1043-bb42-8efa-4929-3ecc39f2cbf9",
+    "kind": "textPrints",
+    "code": "full-color",
+    "label": "چهار رنگ (تمام رنگ)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "چهار رنگ (تمام رنگ)",
+      "bw": false,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 1.25,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 5,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "1146ed6d-0a99-a91e-fa46-62292712404d",
+    "kind": "textPrints",
+    "code": "mixed-toner",
+    "label": "ترکیبی (سیاه و سفید + رنگی تونری)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "ترکیبی (سیاه و سفید + رنگی تونری)",
+      "bw": true,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "toner"
+    },
+    "displayOrder": 6,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "f18bdacc-1e7a-2bed-5459-fb4004c30ea0",
+    "kind": "textPrints",
+    "code": "mixed-two",
+    "label": "ترکیبی (سیاه و سفید + دو رنگ)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "ترکیبی (سیاه و سفید + دو رنگ)",
+      "bw": true,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 0.65,
+      "noPrint": false,
+      "technology": "mixed"
+    },
+    "displayOrder": 7,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "095b6970-9a28-d085-5e1a-46e60fa09a58",
+    "kind": "textPrints",
+    "code": "mixed-full",
+    "label": "ترکیبی (سیاه و سفید + تمام رنگ)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "ترکیبی (سیاه و سفید + تمام رنگ)",
+      "bw": true,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 1.25,
+      "noPrint": false,
+      "technology": "mixed"
+    },
+    "displayOrder": 8,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "34256545-f769-3df4-0121-d0324b03eddc",
+    "kind": "textPrints",
+    "code": "black-image",
+    "label": "مصور مشکی",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "مصور مشکی",
+      "bw": true,
+      "color": false,
+      "bwFactor": 1.6,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 9,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "d85721fd-2e25-2247-2b34-fd2527b8bae2",
+    "kind": "textPrints",
+    "code": "mixed-bw-image-toner",
+    "label": "ترکیبی (سیاه و سفید مصور + تونری)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "ترکیبی (سیاه و سفید مصور + تونری)",
+      "bw": true,
+      "color": true,
+      "bwFactor": 1.35,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "toner"
+    },
+    "displayOrder": 10,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "0dcb6128-8f55-13be-8f4b-8b9ea88e6962",
+    "kind": "textPrints",
+    "code": "mixed-bw-image",
+    "label": "ترکیبی (متنی + مصور مشکی)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "ترکیبی (متنی + مصور مشکی)",
+      "bw": true,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 0.28,
+      "noPrint": false,
+      "technology": "mixed"
+    },
+    "displayOrder": 11,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "878bdd06-e94f-f5e1-7068-6ada73152a43",
+    "kind": "textPrints",
+    "code": "mixed-bw-image-full",
+    "label": "ترکیبی (سیاه و سفید مصور + تمام رنگ)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "ترکیبی (سیاه و سفید مصور + تمام رنگ)",
+      "bw": true,
+      "color": true,
+      "bwFactor": 1.35,
+      "colorFactor": 1.25,
+      "noPrint": false,
+      "technology": "mixed"
+    },
+    "displayOrder": 12,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "26700980-0df1-d6d9-6b3a-50f7dcab3227",
+    "kind": "textPrints",
+    "code": "ink-image",
+    "label": "چاپ مرکبی مصور",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "چاپ مرکبی مصور",
+      "bw": false,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 1.2,
+      "noPrint": false,
+      "technology": "ink"
+    },
+    "displayOrder": 13,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "78b3d526-4ce0-a346-8a58-06ac83df13aa",
+    "kind": "textPrints",
+    "code": "toner-image",
+    "label": "چاپ تونری مصور",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "چاپ تونری مصور",
+      "bw": false,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 1.35,
+      "noPrint": false,
+      "technology": "toner"
+    },
+    "displayOrder": 14,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "51bef080-699d-810c-8cf7-8b9517e49f43",
+    "kind": "textPrints",
+    "code": "two-image",
+    "label": "چاپ دو رنگ مصور",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "چاپ دو رنگ مصور",
+      "bw": false,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 0.85,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 15,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "22fcffef-70d6-a89e-c158-5e56ccdafd4e",
+    "kind": "textPrints",
+    "code": "mixed-toner-image",
+    "label": "ترکیبی (سیاه و سفید + تونری مصور)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "ترکیبی (سیاه و سفید + تونری مصور)",
+      "bw": true,
+      "color": true,
+      "bwFactor": 1,
+      "colorFactor": 1.35,
+      "noPrint": false,
+      "technology": "toner"
+    },
+    "displayOrder": 16,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "1366e2c6-838a-ca43-45dc-6ef31c16aacc",
+    "kind": "textPrints",
+    "code": "manga",
+    "label": "سیاه و سفید (مانگا)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "سیاه و سفید (مانگا)",
+      "bw": true,
+      "color": false,
+      "bwFactor": 1.8,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 17,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "7b5d1ce6-0a89-2a48-2f31-b5a4027f843e",
+    "kind": "textPrints",
+    "code": "no-print",
+    "label": "بدون چاپ متن",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "بدون چاپ متن",
+      "bw": true,
+      "color": false,
+      "bwFactor": 0,
+      "colorFactor": 0,
+      "noPrint": true,
+      "technology": "none"
+    },
+    "displayOrder": 18,
+    "active": true,
+    "isDefault": false
+  },
+  {
+    "id": "3237b91e-efc2-e5c6-7466-8a224dab853a",
+    "kind": "textPrints",
+    "code": "bw-full",
+    "label": "سیاه و سفید (پوشش کامل)",
+    "pricingRule": "text-ink-v1",
+    "metadata": {
+      "label": "سیاه و سفید (پوشش کامل)",
+      "bw": true,
+      "color": false,
+      "bwFactor": 1.8,
+      "colorFactor": 1,
+      "noPrint": false,
+      "technology": "digital"
+    },
+    "displayOrder": 19,
+    "active": true,
+    "isDefault": false
+  }
+]

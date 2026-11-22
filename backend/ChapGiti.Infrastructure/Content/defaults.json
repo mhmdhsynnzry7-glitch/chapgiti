@@ -1,0 +1,746 @@
+{
+  "options": {
+    "bookBindings": {
+      "hot-glue": {
+        "label": "چسب گرم (شومیز)",
+        "base": "soft",
+        "factor": 1,
+        "hard": false
+      },
+      "double-wire": {
+        "label": "فنر دوبل",
+        "base": "spiral",
+        "factor": 1.2,
+        "hard": false
+      },
+      "spiral": {
+        "label": "فنر مارپیچ",
+        "base": "spiral",
+        "factor": 1,
+        "hard": false
+      },
+      "staple": {
+        "label": "منگنه تخت",
+        "base": "soft",
+        "factor": 0.45,
+        "hard": false
+      },
+      "loop": {
+        "label": "منگنه لوپ",
+        "base": "soft",
+        "factor": 0.65,
+        "hard": false
+      },
+      "hard-flat": {
+        "label": "جلد سخت عطف تخت",
+        "base": "hard",
+        "factor": 1,
+        "hard": true
+      },
+      "hard-round": {
+        "label": "جلد سخت عطف گرد",
+        "base": "hard",
+        "factor": 1.25,
+        "hard": true
+      },
+      "hard-spiral": {
+        "label": "جلد سخت + فنری",
+        "base": "hard",
+        "factor": 1,
+        "hard": true
+      }
+    },
+    "bookPapers": {
+      "white70": {
+        "label": "تحریر سفید ۷۰ گرم",
+        "grams": 70,
+        "type": "white",
+        "caliper": 0.09
+      },
+      "white80": {
+        "label": "تحریر سفید ۸۰ گرم",
+        "grams": 80,
+        "type": "white",
+        "caliper": 0.103
+      },
+      "white100": {
+        "label": "تحریر سفید ۱۰۰ گرم",
+        "grams": 100,
+        "type": "white",
+        "caliper": 0.128
+      },
+      "cream60": {
+        "label": "تحریر نخودی ۶۰ گرم",
+        "grams": 60,
+        "type": "cream",
+        "caliper": 0.1
+      },
+      "bulky": {
+        "label": "بالکی کرم",
+        "grams": 60,
+        "type": "cream",
+        "caliper": 0.12
+      },
+      "colored": {
+        "label": "تحریر الوان",
+        "grams": 80,
+        "type": "colored",
+        "caliper": 0.105
+      },
+      "coated128": {
+        "label": "گلاسه براق ۱۲۸ گرم",
+        "grams": 128,
+        "type": "coated",
+        "caliper": 0.11
+      },
+      "coated200": {
+        "label": "گلاسه براق ۲۰۰ گرم",
+        "grams": 200,
+        "type": "coated",
+        "caliper": 0.172
+      },
+      "coated250": {
+        "label": "گلاسه براق ۲۵۰ گرم",
+        "grams": 250,
+        "type": "coated",
+        "caliper": 0.215
+      },
+      "coated300": {
+        "label": "گلاسه براق ۳۰۰ گرم",
+        "grams": 300,
+        "type": "coated",
+        "caliper": 0.258
+      },
+      "label": {
+        "label": "کاغذ پشت‌چسب‌دار",
+        "grams": 160,
+        "type": "label",
+        "caliper": 0.18
+      }
+    },
+    "bookSizes": {
+      "raghi": {
+        "label": "رقعی استاندارد",
+        "width": 14.5,
+        "height": 21.5,
+        "factor": 1
+      },
+      "vaziri": {
+        "label": "وزیری",
+        "width": 17,
+        "height": 24,
+        "factor": 1.2
+      },
+      "a4": {
+        "label": "رحلی",
+        "width": 21,
+        "height": 29.7,
+        "factor": 1.7
+      },
+      "palto": {
+        "label": "پالتویی",
+        "width": 11,
+        "height": 22,
+        "factor": 0.9
+      },
+      "pocket": {
+        "label": "جیبی وزیری",
+        "width": 12,
+        "height": 17,
+        "factor": 0.8
+      },
+      "square21": {
+        "label": "خشتی ۲۱ × ۲۱",
+        "width": 21,
+        "height": 21,
+        "factor": 1.45
+      },
+      "square16": {
+        "label": "خشتی ۱۶ × ۱۶",
+        "width": 16,
+        "height": 16,
+        "factor": 0.95
+      },
+      "square14": {
+        "label": "خشتی ۱۴ × ۱۴",
+        "width": 14,
+        "height": 14,
+        "factor": 0.8
+      },
+      "octavo": {
+        "label": "اکتاو ۱۹ × ۱۶",
+        "width": 16,
+        "height": 19,
+        "factor": 1
+      },
+      "sultani": {
+        "label": "سلطانی",
+        "width": 24,
+        "height": 34,
+        "factor": 2.4
+      },
+      "square30": {
+        "label": "خشتی ۳۰ × ۳۰",
+        "width": 30,
+        "height": 30,
+        "factor": 2.8
+      },
+      "custom": {
+        "label": "قطع سفارشی",
+        "width": 14.5,
+        "height": 21.5,
+        "factor": 1
+      }
+    },
+    "coverCoatings": {
+      "gloss": "سلفون براق",
+      "matte": "سلفون مات",
+      "none": "بدون سلفون"
+    },
+    "coverPapers": {
+      "coated300": "گلاسه ۳۰۰ گرم",
+      "coated250": "گلاسه ۲۵۰ گرم",
+      "coated200": "گلاسه ۲۰۰ گرم",
+      "kraft270": "کرافت ۲۷۰ گرم",
+      "plastic": "طلق طرح‌دار"
+    },
+    "coverPrints": {
+      "front": "چهار رنگ یک رو",
+      "both": "چهار رنگ دو رو",
+      "flap": "چهار رنگ یک رو با لبه برگردان",
+      "both-flap": "چهار رنگ دو رو با لبه برگردان",
+      "none": "بدون جلد",
+      "plastic": "طلق"
+    },
+    "finishingServices": {
+      "roundCorners": {
+        "label": "گوشه گرد",
+        "matte": false,
+        "hard": false
+      },
+      "shrink": {
+        "label": "شیرینک",
+        "matte": false,
+        "hard": false
+      },
+      "goldFoil": {
+        "label": "طلاکوب",
+        "matte": true,
+        "hard": false
+      },
+      "silverFoil": {
+        "label": "نقره‌کوب",
+        "matte": true,
+        "hard": false
+      },
+      "spotUV": {
+        "label": "یووی موضعی",
+        "matte": true,
+        "hard": false
+      },
+      "endpaperBw": {
+        "label": "آستر بدرقه سیاه و سفید",
+        "matte": false,
+        "hard": true
+      },
+      "endpaperColor": {
+        "label": "آستر بدرقه رنگی",
+        "matte": false,
+        "hard": true
+      },
+      "bookmark": {
+        "label": "نشانگر کتاب",
+        "matte": false,
+        "hard": false
+      },
+      "coloredEdges": {
+        "label": "لبه رنگی",
+        "matte": false,
+        "hard": false
+      },
+      "metallicEdges": {
+        "label": "لبه طلایی / نقره‌ای",
+        "matte": false,
+        "hard": false
+      },
+      "bellyBand": {
+        "label": "بلی‌بند",
+        "matte": false,
+        "hard": false
+      },
+      "thickEdges": {
+        "label": "لبه رنگی قطور",
+        "matte": false,
+        "hard": false
+      },
+      "hardCoverJacket": {
+        "label": "کاور جلد سخت",
+        "matte": false,
+        "hard": true
+      },
+      "ribbon": {
+        "label": "روبان جلد سخت",
+        "matte": false,
+        "hard": true
+      },
+      "laminatedEndpaper": {
+        "label": "آستر بدرقه رنگی + سلفون",
+        "matte": false,
+        "hard": true
+      }
+    },
+    "textPrints": {
+      "bw-text": {
+        "label": "سیاه و سفید (متنی)",
+        "bw": true,
+        "color": false,
+        "bwFactor": 1,
+        "colorFactor": 1
+      },
+      "bw-image": {
+        "label": "سیاه و سفید (مصور)",
+        "bw": true,
+        "color": false,
+        "bwFactor": 1.35,
+        "colorFactor": 1
+      },
+      "two-color": {
+        "label": "دو رنگ",
+        "bw": false,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 0.65
+      },
+      "color-toner": {
+        "label": "چهار رنگ (تونری)",
+        "bw": false,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 1
+      },
+      "color-ink": {
+        "label": "چهار رنگ (مرکبی)",
+        "bw": false,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 0.9
+      },
+      "full-color": {
+        "label": "چهار رنگ (تمام رنگ)",
+        "bw": false,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 1.25
+      },
+      "mixed-toner": {
+        "label": "ترکیبی (سیاه و سفید + رنگی تونری)",
+        "bw": true,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 1
+      },
+      "mixed-two": {
+        "label": "ترکیبی (سیاه و سفید + دو رنگ)",
+        "bw": true,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 0.65
+      },
+      "mixed-full": {
+        "label": "ترکیبی (سیاه و سفید + تمام رنگ)",
+        "bw": true,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 1.25
+      },
+      "black-image": {
+        "label": "مصور مشکی",
+        "bw": true,
+        "color": false,
+        "bwFactor": 1.6,
+        "colorFactor": 1
+      },
+      "mixed-bw-image-toner": {
+        "label": "ترکیبی (سیاه و سفید مصور + تونری)",
+        "bw": true,
+        "color": true,
+        "bwFactor": 1.35,
+        "colorFactor": 1
+      },
+      "mixed-bw-image": {
+        "label": "ترکیبی (متنی + مصور مشکی)",
+        "bw": true,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 0.28
+      },
+      "mixed-bw-image-full": {
+        "label": "ترکیبی (سیاه و سفید مصور + تمام رنگ)",
+        "bw": true,
+        "color": true,
+        "bwFactor": 1.35,
+        "colorFactor": 1.25
+      },
+      "ink-image": {
+        "label": "چاپ مرکبی مصور",
+        "bw": false,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 1.2
+      },
+      "toner-image": {
+        "label": "چاپ تونری مصور",
+        "bw": false,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 1.35
+      },
+      "two-image": {
+        "label": "چاپ دو رنگ مصور",
+        "bw": false,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 0.85
+      },
+      "mixed-toner-image": {
+        "label": "ترکیبی (سیاه و سفید + تونری مصور)",
+        "bw": true,
+        "color": true,
+        "bwFactor": 1,
+        "colorFactor": 1.35
+      },
+      "manga": {
+        "label": "سیاه و سفید (مانگا)",
+        "bw": true,
+        "color": false,
+        "bwFactor": 1.8,
+        "colorFactor": 1
+      },
+      "no-print": {
+        "label": "بدون چاپ متن",
+        "bw": true,
+        "color": false,
+        "bwFactor": 0,
+        "colorFactor": 0
+      },
+      "bw-full": {
+        "label": "سیاه و سفید (پوشش کامل)",
+        "bw": true,
+        "color": false,
+        "bwFactor": 1.8,
+        "colorFactor": 1
+      }
+    }
+  },
+  "rates": {
+    "bw": 190,
+    "color": 1150,
+    "cream": 250,
+    "coated": 490,
+    "soft": 18000,
+    "hard": 88000,
+    "spiral": 23000,
+    "setup": 120000,
+    "coverPrint": 6000,
+    "coverPaper": 4000,
+    "lamination": 5000,
+    "roundCorners": 4000,
+    "shrink": 2500,
+    "goldFoil": 16000,
+    "silverFoil": 16000,
+    "spotUV": 12000,
+    "endpaperBw": 3500,
+    "endpaperColor": 8500,
+    "bookmark": 2500,
+    "coloredEdges": 9000,
+    "metallicEdges": 14000,
+    "bellyBand": 6000,
+    "thickEdges": 11000,
+    "hardCoverJacket": 10000,
+    "ribbon": 3500,
+    "laminatedEndpaper": 11000
+  },
+  "settings": {
+    "brand": "چاپ گیتی",
+    "tagline": "خانه‌ای برای داستان شما",
+    "phone": "",
+    "email": "",
+    "address": "",
+    "hours": "شنبه تا چهارشنبه، ۹ تا ۱۷",
+    "instagram": "",
+    "telegram": "",
+    "bale": "",
+    "seoTitle": "چاپ کتاب و خدمات انتشارات | چاپ گیتی",
+    "seoDescription": "محاسبه آنلاین هزینه چاپ کتاب، ثبت سفارش چاپ دیجیتال، طراحی جلد، صفحه‌آرایی و خدمات نشر. از اولین صفحه تا نسخه نهایی کنار شما هستیم."
+  },
+  "services": [
+    {
+      "slug": "book-printing",
+      "title": "چاپ کتاب",
+      "subtitle": "از یک نسخه تا هزاران داستان",
+      "icon": "book",
+      "description": "چاپ دیجیتال و افست، با انتخاب قطع، کاغذ و صحافی متناسب با کتاب شما. مشخصات را وارد کنید، برآورد بگیرید و فایل را برای بررسی بفرستید.",
+      "features": [
+        "چاپ سیاه و سفید و تمام‌رنگی",
+        "قطع رقعی، وزیری و رحلی",
+        "صحافی شومیز، جلد سخت و فنری"
+      ],
+      "color": "blue",
+      "id": "132b3a11-52d5-4a58-8d2b-000000000001",
+      "fullDescription": "چاپ دیجیتال و افست، با انتخاب قطع، کاغذ و صحافی متناسب با کتاب شما. مشخصات را وارد کنید، برآورد بگیرید و فایل را برای بررسی بفرستید.",
+      "image": "",
+      "sections": [],
+      "seoTitle": "",
+      "seoDescription": "",
+      "displayOrder": 0,
+      "active": true,
+      "version": 1,
+      "aliases": []
+    },
+    {
+      "slug": "publishing",
+      "title": "خدمات نشر",
+      "subtitle": "مسیر نویسنده شدن، روشن‌تر",
+      "icon": "feather",
+      "description": "بررسی و هماهنگی مراحل آماده‌سازی اثر و خدمات نشر. محدوده خدمات، مدارک و زمان‌بندی پس از بررسی اثر به شما اعلام می‌شود.",
+      "features": [
+        "مشاوره آماده‌سازی اثر",
+        "پیگیری مراحل نشر",
+        "هماهنگی طراحی و تولید"
+      ],
+      "color": "orange",
+      "id": "132b3a11-52d5-4a58-8d2b-000000000002",
+      "fullDescription": "بررسی و هماهنگی مراحل آماده‌سازی اثر و خدمات نشر. محدوده خدمات، مدارک و زمان‌بندی پس از بررسی اثر به شما اعلام می‌شود.",
+      "image": "",
+      "sections": [],
+      "seoTitle": "",
+      "seoDescription": "",
+      "displayOrder": 1,
+      "active": true,
+      "version": 1,
+      "aliases": []
+    },
+    {
+      "slug": "cover-design",
+      "title": "طراحی جلد",
+      "subtitle": "اولین برخورد، ماندگارترین تصویر",
+      "icon": "palette",
+      "description": "طراحی جلد متناسب با موضوع، مخاطب و هویت اثر؛ از انتخاب تایپوگرافی و ترکیب‌بندی تا آماده‌سازی فایل نهایی چاپ.",
+      "features": [
+        "اتود اختصاصی جلد",
+        "آماده‌سازی عطف و پشت جلد",
+        "خروجی آماده چاپ"
+      ],
+      "color": "sage",
+      "id": "132b3a11-52d5-4a58-8d2b-000000000003",
+      "fullDescription": "طراحی جلد متناسب با موضوع، مخاطب و هویت اثر؛ از انتخاب تایپوگرافی و ترکیب‌بندی تا آماده‌سازی فایل نهایی چاپ.",
+      "image": "",
+      "sections": [],
+      "seoTitle": "",
+      "seoDescription": "",
+      "displayOrder": 2,
+      "active": true,
+      "version": 1,
+      "aliases": []
+    },
+    {
+      "slug": "page-layout",
+      "title": "صفحه‌آرایی",
+      "subtitle": "خواندن، به زیباترین شکل",
+      "icon": "layout",
+      "description": "چیدمان دقیق متن، تصاویر و جدول‌ها با توجه به قطع و موضوع کتاب. صفحه‌آرایی یکدست برای تجربه خواندن راحت‌تر.",
+      "features": [
+        "صفحه‌آرایی ادبی و دانشگاهی",
+        "تنظیم فهرست و شماره صفحات",
+        "کنترل فایل پیش از چاپ"
+      ],
+      "color": "lilac",
+      "id": "132b3a11-52d5-4a58-8d2b-000000000004",
+      "fullDescription": "چیدمان دقیق متن، تصاویر و جدول‌ها با توجه به قطع و موضوع کتاب. صفحه‌آرایی یکدست برای تجربه خواندن راحت‌تر.",
+      "image": "",
+      "sections": [],
+      "seoTitle": "",
+      "seoDescription": "",
+      "displayOrder": 3,
+      "active": true,
+      "version": 1,
+      "aliases": []
+    },
+    {
+      "slug": "editing",
+      "title": "ویراستاری",
+      "subtitle": "کلمات شما، روان‌تر و دقیق‌تر",
+      "icon": "pen",
+      "description": "ویرایش زبانی و نگارشی اثر با حفظ صدای نویسنده. دامنه ویرایش و زمان تحویل پس از مطالعه نمونه متن مشخص می‌شود.",
+      "features": [
+        "اصلاح نگارش و نشانه‌گذاری",
+        "یکدست‌سازی متن",
+        "بررسی نمونه پیش از شروع"
+      ],
+      "color": "sand",
+      "id": "132b3a11-52d5-4a58-8d2b-000000000005",
+      "fullDescription": "ویرایش زبانی و نگارشی اثر با حفظ صدای نویسنده. دامنه ویرایش و زمان تحویل پس از مطالعه نمونه متن مشخص می‌شود.",
+      "image": "",
+      "sections": [],
+      "seoTitle": "",
+      "seoDescription": "",
+      "displayOrder": 4,
+      "active": true,
+      "version": 1,
+      "aliases": []
+    },
+    {
+      "slug": "catalog-printing",
+      "title": "چاپ کاتالوگ و نشریه",
+      "subtitle": "هویت برند شما روی کاغذ",
+      "icon": "layers",
+      "description": "آماده‌سازی و چاپ کاتالوگ، بروشور و نشریه با انتخاب کاغذ و پوشش مناسب. برای سفارش‌های اختصاصی درخواست مشاوره ثبت کنید.",
+      "features": [
+        "چاپ تمام‌رنگی",
+        "تنوع کاغذ و روکش",
+        "مشاوره مشخصات فنی"
+      ],
+      "color": "rose",
+      "id": "132b3a11-52d5-4a58-8d2b-000000000006",
+      "fullDescription": "آماده‌سازی و چاپ کاتالوگ، بروشور و نشریه با انتخاب کاغذ و پوشش مناسب. برای سفارش‌های اختصاصی درخواست مشاوره ثبت کنید.",
+      "image": "",
+      "sections": [],
+      "seoTitle": "",
+      "seoDescription": "",
+      "displayOrder": 5,
+      "active": true,
+      "version": 1,
+      "aliases": []
+    }
+  ],
+  "articles": [
+    {
+      "id": "guide-1",
+      "slug": "prepare-print-file",
+      "title": "فایل کتاب را چطور برای چاپ آماده کنیم؟",
+      "excerpt": "از اندازه صفحات تا حاشیه امن و خروجی PDF؛ یک چک‌لیست کوتاه پیش از ارسال فایل.",
+      "category": "راهنمای چاپ",
+      "content": "فایل خوب، شروع یک چاپ خوب است. پیش از ارسال نسخه نهایی، قطع کتاب و اندازه صفحات را مشخص کنید. تمام صفحات باید اندازه یکسان داشته باشند.\n\nحاشیه داخلی را متناسب با ضخامت کتاب انتخاب کنید تا متن در محل صحافی پنهان نشود. تصاویر نزدیک لبه به فضای برش نیاز دارند؛ مقدار دقیق را پیش از خروجی گرفتن با کارشناس چاپ هماهنگ کنید.\n\nفونت‌ها را در فایل PDF جاسازی کنید. کیفیت تصاویر را در اندازه واقعی بررسی کنید و از بزرگ کردن تصاویر کم‌کیفیت خودداری کنید.\n\nترتیب صفحات، شماره‌گذاری، فهرست و صفحات خالی را یک بار از ابتدا تا انتها بازبینی کنید. متن و جلد را به‌صورت فایل‌های جداگانه و با نام مشخص ارسال کنید.\n\nپیش از تیراژ اصلی، درباره نمونه چاپی و تأیید نهایی رنگ و صحافی با چاپخانه هماهنگ کنید.",
+      "published": true,
+      "seoTitle": "آماده‌سازی فایل PDF کتاب برای چاپ",
+      "seoDescription": "چک‌لیست آماده‌سازی فایل کتاب: ابعاد، حاشیه امن، فونت، تصویر و کنترل PDF.",
+      "createdAt": "2026-10-18T00:00:00Z",
+      "updatedAt": "2026-10-18T00:00:00Z"
+    },
+    {
+      "id": "guide-2",
+      "slug": "choose-book-paper",
+      "title": "سفید یا کرم؛ کدام کاغذ برای کتاب شما مناسب است؟",
+      "excerpt": "انتخاب کاغذ روی وزن کتاب، خوانایی متن و نتیجه چاپ تصویر تأثیر می‌گذارد.",
+      "category": "کاغذ و صحافی",
+      "content": "انتخاب کاغذ از موضوع کتاب شروع می‌شود. یک رمان متنی، کتاب عکاسی و دفتر تمرین نیاز یکسانی ندارند. بهتر است چند نمونه واقعی را کنار هم ببینید.\n\nکاغذ تحریر سفید برای بسیاری از کتاب‌های متنی و آموزشی انتخاب آشنایی است. کاغذ بالکی کرم حس و وزن متفاوتی دارد و برای برخی آثار ادبی انتخاب می‌شود. نتیجه را با نمونه چاپی بسنجید.\n\nبرای کتاب‌های تصویری، گلاسه می‌تواند جزئیات و رنگ‌ها را به شکل متفاوتی نمایش دهد. وزن، انعکاس نور و ضخامت نهایی را هم در تصمیم لحاظ کنید.\n\nدر سفارش آنلاین نوع کاغذ را انتخاب کنید و پیش از تأیید نهایی، موجودی و نمونه مناسب را از کارشناس بخواهید.",
+      "published": true,
+      "seoTitle": "راهنمای انتخاب کاغذ کتاب",
+      "seoDescription": "نکات انتخاب تحریر، بالکی و گلاسه برای چاپ کتاب.",
+      "createdAt": "2026-10-18T00:00:00Z",
+      "updatedAt": "2026-10-18T00:00:00Z"
+    },
+    {
+      "id": "guide-3",
+      "slug": "first-book-checklist",
+      "title": "اولین کتاب شما؛ از دست‌نوشته تا نسخه چاپی",
+      "excerpt": "مراحل آماده‌سازی اثر را بشناسید و برای هر مرحله زمان و بودجه در نظر بگیرید.",
+      "category": "دنیای نشر",
+      "content": "چاپ اولین کتاب مجموعه‌ای از تصمیم‌های کوچک است. ابتدا متن را کامل و نسخه مشخصی را برای بررسی انتخاب کنید.\n\nپس از بازخوانی و ویرایش، نوبت صفحه‌آرایی است. قطع و فونت مناسب به تعداد صفحات نهایی و تجربه خواندن شکل می‌دهند. سپس طراحی جلد را با مشخصات نهایی کتاب هماهنگ کنید.\n\nخدمات نشر و مدارک لازم را با ناشر بررسی کنید. شرایط هر اثر ممکن است متفاوت باشد؛ زمان‌بندی قطعی را پس از بررسی پرونده بخواهید.\n\nدر مرحله چاپ، تعداد نسخه، نوع کاغذ و صحافی مشخص می‌شود. برآورد آنلاین نقطه شروع است و تأیید فایل و مشخصات فنی پیش از تولید انجام می‌شود.\n\nنسخه نهایی را با دقت تأیید کنید و درباره بسته‌بندی و روش تحویل هماهنگ شوید.",
+      "published": true,
+      "seoTitle": "مراحل آماده‌سازی و چاپ اولین کتاب",
+      "seoDescription": "از دست‌نوشته و ویرایش تا صفحه‌آرایی، طراحی جلد و چاپ کتاب اول.",
+      "createdAt": "2026-10-18T00:00:00Z",
+      "updatedAt": "2026-10-18T00:00:00Z"
+    }
+  ],
+  "banners": [
+    {
+      "id": "print",
+      "eyebrow": "چاپ دیجیتال و افست",
+      "title": "کتابت را همین‌جا\nبه چاپ برسان.",
+      "subtitle": "از یک نسخه تا تیراژ دلخواه؛ قطع، کاغذ و صحافی را انتخاب کن و هزینه را پیش از سفارش ببین.",
+      "image": "/banners/print.svg",
+      "link": "/calculator",
+      "label": "محاسبه هزینه چاپ",
+      "theme": "navy",
+      "kind": "promotion",
+      "active": true
+    },
+    {
+      "id": "binding",
+      "eyebrow": "جزئیات کوچک، تفاوت‌های بزرگ",
+      "title": "چاپی که\nدیده می‌شود.",
+      "subtitle": "جلد سخت، طلاکوب، لبه‌رنگی و روکش‌های متنوع؛ انتخاب‌های بیشتری برای کتاب شما.",
+      "image": "/banners/binding.svg",
+      "link": "/calculator",
+      "label": "انتخاب خدمات تکمیلی",
+      "theme": "orange",
+      "kind": "promotion",
+      "active": true
+    },
+    {
+      "id": "portfolio",
+      "eyebrow": "گالری چاپ و طراحی",
+      "title": "برای ایده‌ات\nالهام بگیر.",
+      "subtitle": "طرح‌های نمایشی جلد و صحافی را ببین و ترکیب مناسب کتابت را انتخاب کن.",
+      "image": "/banners/portfolio.svg",
+      "link": "/portfolio",
+      "label": "مشاهده گالری",
+      "theme": "sage",
+      "kind": "portfolio",
+      "active": true
+    }
+  ],
+  "portfolio": [
+    {
+      "id": "hardcover",
+      "title": "روایت ماندگار",
+      "subtitle": "جلد سخت با روکش مات و جزئیات طلایی؛ ترکیبی برای کتاب‌های نفیس و یادگاری.",
+      "eyebrow": "جلد سخت و طلاکوب",
+      "image": "/portfolio/hardcover.svg",
+      "link": "/calculator",
+      "label": "محاسبه چاپ مشابه",
+      "theme": "sage",
+      "kind": "portfolio",
+      "active": true,
+      "demo": true
+    },
+    {
+      "id": "paperback",
+      "title": "در امتداد دریا",
+      "subtitle": "جلد شومیز و صحافی چسب گرم؛ طرحی ساده برای رمان، داستان و مجموعه شعر.",
+      "eyebrow": "چاپ کتاب و جلد شومیز",
+      "image": "/portfolio/paperback.svg",
+      "link": "/calculator",
+      "label": "محاسبه چاپ مشابه",
+      "theme": "navy",
+      "kind": "portfolio",
+      "active": true,
+      "demo": true
+    },
+    {
+      "id": "catalog",
+      "title": "فرم و رنگ",
+      "subtitle": "نمونه طراحی کاتالوگ تمام‌رنگی با چیدمان تصویری و صحافی منگنه.",
+      "eyebrow": "کاتالوگ و چاپ رنگی",
+      "image": "/portfolio/catalog.svg",
+      "link": "/order",
+      "label": "ثبت درخواست چاپ",
+      "theme": "orange",
+      "kind": "portfolio",
+      "active": true,
+      "demo": true
+    }
+  ],
+  "statuses": {
+    "new": "در انتظار بررسی",
+    "review": "بررسی فایل",
+    "confirmed": "تأیید سفارش",
+    "printing": "در حال چاپ",
+    "binding": "صحافی",
+    "ready": "آماده تحویل",
+    "completed": "تحویل شده",
+    "cancelled": "رد / لغو شده"
+  }
+}

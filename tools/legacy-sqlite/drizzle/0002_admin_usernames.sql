@@ -1,0 +1,4 @@
+CREATE TABLE admin_usernames (
+  username TEXT PRIMARY KEY COLLATE NOCASE NOT NULL,
+  email TEXT NOT NULL UNIQUE REFERENCES admin_users(email) ON DELETE CASCADE
+);

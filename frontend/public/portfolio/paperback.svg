@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#e7e6de"/><stop offset="1" stop-color="#d3dacf"/></linearGradient><filter id="shadow" x="-50%" y="-30%" width="200%" height="180%"><feDropShadow dx="10" dy="20" stdDeviation="14" flood-color="#183c46" flood-opacity=".23"/></filter></defs>
+<rect width="640" height="480" rx="16" fill="url(#bg)"/><path d="m440 0 200 248V0Z" fill="#f6f2e7" opacity=".45"/><ellipse cx="322" cy="392" rx="170" ry="28" fill="#1c4d57" opacity=".12"/>
+<g transform="translate(192 62) rotate(10 120 170)" filter="url(#shadow)">
+<path d="m3 3 228 6 12 15v310l-14 12H8Z" fill="#d9d0b8"/><rect x="9" y="7" width="226" height="329" rx="2" fill="#fff8e7"/><path d="M24 25h198M24 31h198M24 325h198" stroke="#c3bdaa"/>
+<rect width="224" height="326" rx="2" fill="#1c4b59"/><path d="M8 0v326" stroke="#123b49" stroke-width="10"/>
+<circle cx="168" cy="95" r="45" fill="#e8b87e"/><path d="M0 131c40-45 65 58 110 8s61-1 114-19v206H0Z" fill="#75998b"/><path d="M0 182c48-33 58 50 115 5s60-10 109-17v156H0Z" fill="#e9d8b7"/><path d="M0 216c44-28 72 30 116 1s72-13 108-18v127H0Z" fill="#bd654d"/>
+<path d="M29 239c38-18 64 12 95-5m-84 22c28-10 51 9 76 0m-51 19c30-10 49 5 72-5" stroke="#f3d9ba" fill="none" stroke-width="1.5" opacity=".7"/>
+<text x="114" y="61" fill="#f5e8d2" font-family="Tahoma,sans-serif" font-size="18" text-anchor="middle" direction="rtl">در امتداد دریا</text><text x="116" y="87" fill="#b3c8c4" font-family="Tahoma,sans-serif" font-size="8" text-anchor="middle" direction="rtl">یک روایت کوتاه</text><text x="116" y="305" fill="#f7dfc4" font-family="Tahoma,sans-serif" font-size="8" text-anchor="middle" direction="rtl">چاپ گیتی</text>
+</g><path d="M46 420h55M46 427h30" stroke="#537b79" stroke-width="2" opacity=".4"/></svg>

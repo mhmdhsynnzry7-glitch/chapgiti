@@ -1,0 +1,143 @@
+throw new Error("Legacy SQLite runtime suite retired. Use npm run test:runtime for SQL Server; this guard prevents legacy CLI tests from changing live data.");
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync } from "node:fs";
+import path from "node:path";
+mkdirSync(".qa", {recursive: true});
+process.env.DATA_DIR = mkdtempSync(path.resolve(".qa/sqlite-test-"));
+const {migrate, database, openConnection} = await import("../runtime/database.mjs");
+const {bucket} = await import("../runtime/storage.mjs");
+const {hashPassword, verifyPassword} = await import("../runtime/password.mjs");
+test("migrations are repeatable and foreign keys enforced", async () => {
+  migrate(); migrate();
+  const db = database();
+  assert.equal((await db.prepare("SELECT COUNT(*) n FROM app_migrations").first()).n, 7);
+  await assert.rejects(db.prepare("INSERT INTO admin_sessions VALUES ('hash','missing@example.com',1)").run());
+});
+test("batch rollback preserves all-or-nothing semantics", async () => {
+  const db = database();
+  await assert.rejects(db.batch([
+    db.prepare("INSERT INTO settings VALUES ('rollback','{}')"),
+    db.prepare("INSERT INTO settings VALUES ('rollback','{}')"),
+  ]));
+  assert.equal(await db.prepare("SELECT * FROM settings WHERE key='rollback'").first(), null);
+});
+test("changes() reflects previous update within a batch", async () => {
+  const db = database();
+  await db.prepare("INSERT INTO settings VALUES ('version','1')").run();
+  const result = await db.batch([
+    db.prepare("UPDATE settings SET value='2' WHERE key='version' AND value='wrong'"),
+    db.prepare("INSERT INTO settings SELECT 'event','yes' WHERE changes()=1"),
+  ]);
+  assert.equal(result[0].meta.changes, 0);
+  assert.equal(await db.prepare("SELECT * FROM settings WHERE key='event'").first(), null);
+});
+test("SQLite data persists across independent connections", async () => {
+  const other = openConnection();
+  assert.equal(other.prepare("SELECT value FROM settings WHERE key='version'").get().value, "1");
+  other.close();
+});
+test("private PDF store persists bytes and blocks traversal", async () => {
+  const key = crypto.randomUUID() + "/" + crypto.randomUUID() + ".pdf";
+  await bucket.put(key, new TextEncoder().encode("%PDF-1.4"));
+  assert.equal(new TextDecoder().decode((await bucket.get(key)).body), "%PDF-1.4");
+  await assert.rejects(bucket.get("../../.env.local"));
+  await assert.rejects(bucket.put(key, new Uint8Array()));
+  await bucket.delete(key);
+  assert.equal(await bucket.get(key), null);
+});
+test("passwords are salted and incorrect passwords rejected", async () => {
+  const pass = "runtime-test-password-" + crypto.randomUUID();
+  const first = await hashPassword(pass), second = await hashPassword(pass);
+  assert.notEqual(first, second);
+  assert.equal(await verifyPassword(pass, first), true);
+  assert.equal(await verifyPassword("wrong-password", first), false);
+  await assert.rejects(hashPassword("short"));
+});
+
+
+test("username reset preserves account data, revokes sessions and rejects alias collisions atomically", async () => {
+  const { setAdminCredentials } = await import("../runtime/admin-accounts.mjs");
+  const db = database();
+  const email = "owner@example.invalid";
+  const password = "Test-only123";
+  await setAdminCredentials({ email, username: "Admin", password });
+  assert.equal((await db.prepare("SELECT email FROM admin_usernames WHERE username='ADMIN'").first()).email, email);
+  const before = await db.prepare("SELECT * FROM admin_users WHERE email=?").bind(email).first();
+  assert.equal(await verifyPassword(password, before.password_hash), true);
+  await db.prepare("INSERT INTO admin_sessions VALUES ('session-for-reset',?,9999999999999)").bind(email).run();
+  const secondPassword = "Another-test11";
+  await setAdminCredentials({ email, username: "admin", password: secondPassword });
+  assert.equal(await db.prepare("SELECT * FROM admin_sessions WHERE email=?").bind(email).first(), null);
+  assert.equal((await db.prepare("SELECT created_at FROM admin_users WHERE email=?").bind(email).first()).created_at, before.created_at);
+  assert.equal((await db.prepare("SELECT value FROM settings WHERE key='version'").first()).value, "1");
+  await assert.rejects(setAdminCredentials({ email: "second@example.invalid", username: "ADMIN", password }));
+  assert.equal(await db.prepare("SELECT * FROM admin_users WHERE email='second@example.invalid'").first(), null);
+  const after = await db.prepare("SELECT password_hash FROM admin_users WHERE email=?").bind(email).first();
+  assert.equal(await verifyPassword(secondPassword, after.password_hash), true);
+  await assert.rejects(setAdminCredentials({ email, username: "invalid@email", password }));
+  await assert.rejects(setAdminCredentials({ email, username: "admin", password: "short" }));
+});
+
+
+test("upgrading saved branding preserves contact settings and the admin reset CLI accepts stdin", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { createHash } = await import("node:crypto");
+  const { DatabaseSync } = await import("node:sqlite");
+  const { spawnSync } = await import("node:child_process");
+  const fixture = mkdtempSync(path.resolve(".qa/giti-upgrade-"));
+  const before = new DatabaseSync(path.join(fixture, "site.sqlite"));
+  before.exec("CREATE TABLE app_migrations (name TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at TEXT NOT NULL)");
+  for (const name of ["0000_icy_frog_thor.sql", "0001_local_admin.sql", "0002_admin_usernames.sql"]) {
+    const sql = readFileSync(path.join("drizzle", name), "utf8");
+    before.exec(sql);
+    before.prepare("INSERT INTO app_migrations VALUES (?,?,?)")
+      .run(name, createHash("sha256").update(sql.replace(/\r\n/g, "\n")).digest("hex"), new Date().toISOString());
+  }
+  before.prepare("INSERT INTO settings VALUES ('site',?)").run(JSON.stringify({
+    brand: "نقش و نشر", seoTitle: "خدمات اختصاصی | نقش و نشر", phone: "02112345678",
+    address: "نشانی محفوظ", tagline: "شعار محفوظ", extraSetting: 42,
+  }));
+  before.prepare("INSERT INTO settings VALUES (\'rates\',?)").run(JSON.stringify({bw:777,hard:12345,customSaved:true}));
+  before.close();
+  const password = "Giti-test-" + crypto.randomUUID();
+  const command = spawnSync(process.execPath, ["scripts/admin-setup.mjs", "upgrade@example.invalid", "--username", "Admin", "--password-stdin"], {
+    env: { ...process.env, DATA_DIR: fixture }, input: password + "\r\n", encoding: "utf8", windowsHide: true,
+  });
+  assert.equal(command.status, 0, command.stderr);
+  assert.ok(!command.stdout.includes(password) && !command.stderr.includes(password));
+  const after = new DatabaseSync(path.join(fixture, "site.sqlite"));
+  const settings = JSON.parse(after.prepare("SELECT value FROM settings WHERE key='site'").get().value);
+  assert.deepEqual(JSON.parse(after.prepare("SELECT value FROM settings WHERE key=\'rates\'").get().value),{bw:777,hard:12345,customSaved:true});
+  assert.equal(settings.brand, "چاپ گیتی");
+  assert.equal(settings.seoTitle, "خدمات اختصاصی | چاپ گیتی");
+  assert.equal(settings.phone, "02112345678");
+  assert.equal(settings.address, "نشانی محفوظ");
+  assert.equal(settings.tagline, "شعار محفوظ");
+  assert.equal(settings.extraSetting, 42);
+  assert.equal(after.prepare("SELECT email FROM admin_usernames WHERE username='admin'").get().email, "upgrade@example.invalid");
+  assert.equal(await verifyPassword(password, after.prepare("SELECT password_hash FROM admin_users").get().password_hash), true);
+  after.close();
+});
+
+test("customer credentials preserve profiles, reject phone takeover and survive reopening the database", async () => {
+  const {customerAccount,authenticateCustomer,completeCustomerProfile}=await import("../runtime/customer-accounts.mjs");
+  const db=database(),phone="09129999001",firstId=crypto.randomUUID(),otherId=crypto.randomUUID(),stamp=new Date().toISOString();
+  for(const id of [firstId,otherId]) await db.prepare("INSERT INTO customer_registrations (id,phone,first_name,last_name,created_at,updated_at) VALUES (?,?,?,'قدیمی',?,?)").bind(id,phone,"مشتری",stamp,stamp).run();
+  assert.equal(await authenticateCustomer(phone,"not-a-password"),null);
+  await assert.rejects(completeCustomerProfile({id:firstId,phone},"نام","خانوادگی","short"));
+  assert.equal(await customerAccount(phone),null);
+  const password="Customer-only-"+crypto.randomUUID();
+  await completeCustomerProfile({id:firstId,phone},"نام","خانوادگی",password);
+  assert.equal(await authenticateCustomer(phone,password),firstId);
+  assert.equal(await authenticateCustomer(phone,"wrong-password"),null);
+  const before=await customerAccount(phone);
+  await assert.rejects(completeCustomerProfile({id:otherId,phone},"تلاش","غیرمجاز",password),error=>error.code==="PHONE_IN_USE");
+  assert.deepEqual(await customerAccount(phone),before);
+  assert.equal((await db.prepare("SELECT first_name FROM customer_registrations WHERE id=?").bind(otherId).first()).first_name,"مشتری");
+  await completeCustomerProfile({id:firstId,phone},"نام جدید","خانوادگی");
+  assert.equal(await authenticateCustomer(phone,password),firstId);
+  const other=openConnection();
+  assert.equal(other.prepare("SELECT registration_id FROM customer_accounts WHERE phone=?").get(phone).registration_id,firstId);
+  other.close();
+});

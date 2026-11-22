@@ -1,0 +1,18 @@
+<service>
+  <id>GitiNode</id>
+  <name>GitiNode</name>
+  <description>Chap Giti React frontend and ASP.NET Core / SQL Server backend</description>
+  <executable>C:\Program Files\nodejs\node.exe</executable>
+  <arguments>"C:\Giti\app\scripts\start-node.mjs"</arguments>
+  <workingdirectory>C:\Giti\app</workingdirectory>
+  <env name="NODE_ENV" value="production" />
+  <env name="DATA_DIR" value="C:\Giti\data" />
+  <env name="TRUST_IIS_PROXY" value="true" />
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>30 sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec" />
+  <logpath>C:\Giti\app\logs</logpath>
+  <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>5</keepFiles></log>
+  <serviceaccount><domain>NT AUTHORITY</domain><user>LocalService</user></serviceaccount>
+</service>

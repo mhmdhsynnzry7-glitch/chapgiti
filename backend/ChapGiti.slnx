@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ChapGiti.Domain/ChapGiti.Domain.csproj" />
+  <Project Path="ChapGiti.Application/ChapGiti.Application.csproj" />
+  <Project Path="ChapGiti.Infrastructure/ChapGiti.Infrastructure.csproj" />
+  <Project Path="ChapGiti.Api/ChapGiti.Api.csproj" />
+</Solution>

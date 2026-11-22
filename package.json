@@ -1,0 +1,42 @@
+{
+  "name": "chap-giti",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "dev": "node scripts/dev-dotnet.mjs",
+    "dev:status": "node scripts/dev-dotnet.mjs status",
+    "dev:stop": "node scripts/dev-dotnet.mjs stop",
+    "test:dev-processes": "node --test tests/development/process-lifecycle.test.mjs",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "node scripts/build-dotnet.mjs",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:backend": "dotnet build backend/ChapGiti.slnx",
+    "start": "node scripts/start-node.mjs",
+    "lint": "npm --prefix frontend run lint",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "db:setup": "node scripts/db-setup.mjs",
+    "db:import": "node scripts/import-sqlite.mjs",
+    "admin:setup": "node scripts/admin-setup.mjs",
+    "test:runtime": "node scripts/test-dotnet.mjs",
+    "test:iis": "node scripts/test-iis.mjs",
+    "test:architecture": "node scripts/test-architecture.mjs",
+    "package:iis": "node scripts/package-iis.mjs",
+    "test:db": "node scripts/test-readonly.mjs",
+    "publish:frontend": "npm --prefix frontend run publish",
+    "publish:backend": "node scripts/publish-backend.mjs",
+    "test:auth": "dotnet run --project backend/tests/ChapGiti.AuthenticationTests",
+    "test:ui": "node tests/modernization-ui.mjs",
+    "test:session-client": "node tests/session-client.mjs",
+    "test:customer-login-errors": "node tests/customer-login-errors.mjs",
+    "test:customer-otp-errors": "node tests/customer-otp-errors.mjs",
+    "test:ui:otp-bypass": "node tests/modernization-ui.mjs --otp-bypass",
+    "test:password-policy": "node tests/password-policy.mjs",
+    "test:release-contracts": "node scripts/check-release-contracts.mjs",
+    "test:release-package": "node tests/release-packaging.mjs",
+    "test:realtime": "node tests/realtime.mjs",
+    "test:print-spec-security": "node tests/print-spec-security.mjs"
+  }
+}

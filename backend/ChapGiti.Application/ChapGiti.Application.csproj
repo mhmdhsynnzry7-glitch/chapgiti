@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Content/MagazineDrafts.fa.json" WithCulture="false" LogicalName="ChapGiti.MagazineDrafts.fa.json" />
+    <ProjectReference Include="../ChapGiti.Domain/ChapGiti.Domain.csproj" />
+  </ItemGroup>
+</Project>

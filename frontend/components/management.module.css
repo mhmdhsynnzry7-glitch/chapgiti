@@ -1,0 +1,100 @@
+.collection {
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid #dbe3e3;
+  border-radius: 0.8rem;
+  background: #fff;
+}
+.toolbar,
+.actions {
+  display: flex;
+  align-items: end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.toolbar {
+  margin-block: 0.45rem;
+}
+.toolbar label {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+}
+.toolbar input,
+.toolbar select,
+.toolbar button,
+.actions button,
+.actions a {
+  padding: 0.36rem 0.65rem;
+  border: 1px solid #bac9cf;
+  border-radius: 0.45rem;
+  background: #fff;
+  color: #183b4d;
+  min-height: 34px;
+}
+.scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+}
+.scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+  font-size: 0.88rem;
+}
+.scroll th,
+.scroll td {
+  padding: 0.55rem 0.65rem;
+  text-align: start;
+  border-bottom: 1px solid #dce4e5;
+  overflow-wrap: anywhere;
+}
+.scroll th {
+  background: #f1f5f4;
+}
+.scroll th button {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  font: inherit;
+}
+.actions {
+  min-width: 6rem;
+}
+.collection :focus-visible,
+.dialog :focus-visible {
+  outline: 3px solid #14788a;
+  outline-offset: 2px;
+}
+.dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(44rem, calc(100vw - 24px));
+  max-height: 86dvh;
+  padding: 1rem;
+  border: 1px solid #ccd8dc;
+  border-radius: 1rem;
+  overflow: auto;
+  color: #17394a;
+}
+.dialog::backdrop {
+  background: #132d40a8;
+}
+.dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.dialog h2 {
+  font-size: 1.1rem;
+}
+
+.skeleton {
+  padding: 0.5rem;
+  border-block: 1px solid #dae4e6;
+  background: repeating-linear-gradient(0deg, #f4f7f8 0 10px, #fff 10px 16px);
+}
