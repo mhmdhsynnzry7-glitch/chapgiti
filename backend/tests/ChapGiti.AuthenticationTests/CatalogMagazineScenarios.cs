@@ -54,17 +54,22 @@ internal static class CatalogMagazineScenarios
         var newCutSpec=JsonSerializer.SerializeToNode(spec)!.AsObject();
         newCutSpec["size"]="supported-new-size";
         newCutSpec["details"]=JsonNode.Parse("""{"width":18,"height":25,"printType":"bw-text","sides":"double","bwPages":120,"colorPages":0,"bwPaper":"white70","colorPaper":"white70","printOnly":false,"bindingStyle":"hot-glue","coverPrint":"front","coverPaper":"coated250","coating":"gloss","orientation":"portrait","readingDirection":"rtl","extras":[]}""");
-        await Send("POST","quote",newCutSpec,409,"CUT_TARIFF_NOT_CONFIGURED");
+        await Send("POST","quote",newCutSpec,409,"CUT_TARIFF_APPROVAL_REQUIRED");
         var unset=await Send("GET","admin/print-tariffs/"+emptyCut);
-        check(unset["version"]!.GetValue<int>()==0 && unset["rates"]==null,"new cut starts without invented prices");
+        check(unset["version"]!.GetValue<int>()==1 && unset["isProposed"]!.GetValue<bool>() && unset["rates"]!.AsObject().Count == CutTariff.Keys.Count,
+            "new fixed cut has a complete independent proposal, never a sellable estimate");
+        await Send("PUT","admin/print-tariffs/"+emptyCut,new{version=1,rates=unset["rates"]},409,"TARIFF_APPROVAL_REQUIRED");
+        await Send("PUT","admin/print-tariffs/"+emptyCut,new{version=1,approveProposal=true,rates=unset["rates"]});
+        var approved=await Send("POST","quote",newCutSpec);
+        check(approved["tariffVersion"]!.GetValue<int>() == 2,"explicit approval creates a new active version even when amounts are unchanged");
         var raghi=host.Data.CatalogItems.Values.Single(i=>i.Kind=="bookSizes" && i.Code=="raghi");
         var original=await Send("GET","admin/print-tariffs/"+raghi.Id);
         var prices=original["rates"]!.DeepClone().AsObject();
         prices["bw"]=prices["bw"]!.GetValue<int>()+17;
-        await Send("PUT","admin/print-tariffs/"+emptyCut,new{version=0,rates=prices});
+        await Send("PUT","admin/print-tariffs/"+emptyCut,new{version=2,rates=prices});
         await Send("PUT","admin/print-tariffs/"+emptyCut,new{version=0,rates=prices},409,"TARIFF_CONFLICT");
         var newer=await Send("POST","quote",newCutSpec);
-        check(newer["total"]!.GetValue<long>()>adjusted["total"]!.GetValue<long>() && newer["tariffVersion"]!.GetValue<int>()==1,"selected cut uses its own explicit version regardless of catalog size factor");
+        check(newer["total"]!.GetValue<long>()>adjusted["total"]!.GetValue<long>() && newer["tariffVersion"]!.GetValue<int>()==3,"selected cut uses its own explicit version regardless of catalog size factor");
         prices["bw"]=-1;await Send("PUT","admin/print-tariffs/"+emptyCut,new{version=1,rates=prices},400);
         prices.Remove("setup");await Send("PUT","admin/print-tariffs/"+emptyCut,new{version=1,rates=prices},400);
         foreach(var (code,increase) in new[]{("vaziri",27),("a4",49)})
@@ -75,6 +80,7 @@ internal static class CatalogMagazineScenarios
             localRates["bw"]=original["rates"]!["bw"]!.GetValue<int>()+increase;
             await Send("PUT","admin/print-tariffs/"+selected.Id,new{version=1,rates=localRates});
             var comparison=await Send("POST","quote",spec with {size=code});
+            Console.WriteLine($"CUT ESTIMATE {code} copies={spec.quantity} pages={spec.pages} total={comparison["total"]} setup={comparison["setup"]} discount={comparison["discountAmount"]}");
             check(comparison["subtotal"]!.GetValue<long>()-adjusted["subtotal"]!.GetValue<long>()==increase*spec.pages*spec.quantity,"exact per-cut unit for "+code+" without a second size multiplier");
         }
         var valid=host.Data.CatalogItems.Values.First(i=>i.Kind=="bookSizes");var metadata=valid.Metadata.DeepClone().AsObject();metadata["width"]=20;

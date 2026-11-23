@@ -1769,14 +1769,6 @@ main {
   border-radius: 7px;
   font-size: 12px;
 }
-.admin-nav a.active {
-  background: #ffffff10;
-  color: #ffbb96;
-  border-right: 2px solid var(--orange);
-}
-.admin-nav a:hover {
-  background: #ffffff08;
-}
 .admin-nav svg {
   width: 18px;
   height: 18px;
@@ -2101,8 +2093,8 @@ td button.link-button {
   font-size: 12px;
 }
 .admin-tabs button.active {
-  background: var(--ink);
-  color: white;
+  background: transparent;
+  color: var(--orange);
 }
 .editor-wrap {
   max-width: 950px;

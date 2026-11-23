@@ -42,11 +42,35 @@ export async function workflowModernizationChecks({page, browser, base, check, c
     }
     await target.setViewportSize({width:1440,height:1000});
   }
+  async function checkCurrent(target, menu, href) {
+    const link=target.locator(menu).locator('a[aria-current="page"]');
+    await link.waitFor({state:"attached"});
+    assert.equal(await link.count(),1);
+    assert.equal(await link.getAttribute("href"),href);
+    const styled=await link.evaluate(el=>{
+      const probe=document.createElement("span"); probe.style.color="var(--orange)"; el.append(probe);
+      const brand=getComputedStyle(probe).color; probe.remove();
+      const style=getComputedStyle(el), icon=el.querySelector("svg");
+      return style.color===brand && style.backgroundColor==="rgba(0, 0, 0, 0)" && style.boxShadow==="none" && (!icon || getComputedStyle(icon).color===brand);
+    });
+    check(styled, href+" active navigation uses only brand foreground");
+  }
   try {
     await publicPage.goto(base+"/calculator");
     await publicPage.locator("form input[name=password]").waitFor();
     check(new URL(publicPage.url()).searchParams.get("next")==="/calculator" && !await publicPage.locator(".book-calculator").count(),"direct guest navigation never mounts calculator inputs");
+    for (const href of ["/", "/services", "/blog", "/contact"]) {
+      await publicPage.goto(base+href);
+      for (const width of [1440,768,390]) {
+        await publicPage.setViewportSize({width,height:920});
+        await publicPage.reload();
+        const toggle=publicPage.locator(".mobile-toggle");
+        if (await toggle.isVisible()) await toggle.click();
+        await checkCurrent(publicPage,"#giti-main-nav",href);
+      }
+    }
     await page.goto(base+"/admin/settings");await page.getByRole("button",{name:"تعرفه‌های چاپ",exact:true}).click();
+    check(await page.locator('.admin-tabs [aria-pressed="true"]').evaluate(el=>getComputedStyle(el).backgroundColor==="rgba(0, 0, 0, 0)"), "active tariff tab has no filled background");
     const selector=page.getByLabel("انتخاب قطع کتاب",{exact:true});
     async function chooseCut(name) {
       await selector.click();
@@ -60,6 +84,11 @@ export async function workflowModernizationChecks({page, browser, base, check, c
     const bw=editor.getByRole("textbox",{name:"چاپ هر صفحه سیاه و سفید",exact:true});
     await bw.waitFor();
     check(await editor.locator("fieldset input").count()===11,"all eleven cut-specific prices are editable under their actual catalog cut");
+    check(!await page.locator(".legacy-tariffs").count() && !await page.getByText(/نرخ‌های قدیمی بدون قطع/).count(), "historical general prices are absent");
+    const initialBW=await bw.inputValue();
+    await bw.fill("۹۹۹");
+    await editor.getByRole("button",{name:"لغو تغییرات",exact:true}).click();
+    check(await bw.inputValue()===initialBW,"cancel restores the selected cut revision");
     await bw.fill("۱۲۳۴");
     await editor.getByText(/تغییرات ذخیره‌نشده/).waitFor();
     page.once("dialog",dialog=>dialog.dismiss());
@@ -68,8 +97,31 @@ export async function workflowModernizationChecks({page, browser, base, check, c
     const saved=page.waitForResponse(r=>r.request().method()==="PUT" && r.url().includes("/admin/print-tariffs/"));
     await editor.getByRole("button",{name:"ذخیره تعرفه این قطع"}).click();
     check((await saved).ok(),"only the selected cut is versioned on explicit save");
+    const catalogResponse=await page.request.get(base+"/api/admin/print-catalog");
+    const template=(await catalogResponse.json()).items.find(item=>item.kind==="bookSizes" && item.code==="vaziri");
+    const made=await page.request.post(base+"/api/admin/print-catalog",{headers:{Origin:base},data:{...template,code:"synthetic-tariff",label:"قطع آزمایشی تعرفه",isDefault:false}});
+    assert.equal(made.status(),201);
+    const createdId=(await made.json()).id;
+    await page.reload(); await page.getByRole("button",{name:"تعرفه‌های چاپ",exact:true}).click();
+    await chooseCut("قطع آزمایشی تعرفه");
+    await editor.getByText(/پیشنهادی، در انتظار تأیید مدیر/).waitFor();
+    const details=editor.getByText("کپی نرخ از قطع دیگر",{exact:true});
+    await details.click();
+    await editor.getByLabel("قطع مبدأ",{exact:true}).click();
+    await page.getByRole("option").filter({hasText:"رقعی"}).first().click();
+    page.once("dialog",dialog=>dialog.accept());
+    await editor.getByRole("button",{name:"کپی در فرم"}).click();
+    await editor.getByText(/مبالغ در فرم کپی شد/).waitFor();
+    const path=base+"/api/admin/print-tariffs/"+createdId;
+    check((await (await page.request.get(path)).json()).isProposed, "copy changes the draft only");
+    await editor.getByRole("button",{name:"لغو تغییرات",exact:true}).click();
+    const approval=page.waitForResponse(r=>r.request().method()==="PUT" && r.url()===path);
+    await editor.getByRole("button",{name:"تأیید و فعال‌سازی تعرفه این قطع"}).click();
+    const approved=await (await approval).json();
+    check(!approved.isProposed && approved.version===2,"explicit admin approval creates an active second revision");
     await page.goto(base+"/calculator");await page.getByRole("button",{name:"محاسبه هزینه",exact:true}).click();
     await page.locator(".price-summary").waitFor();
+    await checkCurrent(page,"#giti-main-nav","/calculator");
     const previous=await page.locator(".price-summary strong").innerText();
     const reestimate=page.waitForResponse(r=>r.request().method()==="POST" && r.url().endsWith("/api/quote"));
     await page.locator(".catalog-trigger").first().click();
@@ -100,12 +152,14 @@ export async function workflowModernizationChecks({page, browser, base, check, c
     ];
     for(const args of views) await inspect(...args);
     await page.goto(base+"/account/orders/"+order.id);
+    await checkCurrent(page,"#giti-main-nav","/account/orders");
     check(await page.locator('#giti-main-nav a[aria-current="page"]').getAttribute("href")==="/account/orders","nested customer order highlights its parent navigation item");
     await page.goto(base+"/admin/orders/"+order.id);
     const adminMenu=page.locator(".admin-nav");
     await adminMenu.waitFor({state:"visible"});
     const activeOrder=adminMenu.locator('a[aria-current="page"][href="/admin/orders"]');
     await activeOrder.waitFor({state:"visible"});
+    await checkCurrent(page,".admin-nav","/admin/orders");
     await page.locator(".timeline").getByText(/ثبت‌کننده مشخص نیست/).first().waitFor();
     check(true,"an order history event with no recorded author renders without breaking the admin detail");
     await page.getByText("ثبت نشده / ثبت نشده",{exact:true}).waitFor();

@@ -553,6 +553,23 @@ function SettingsEditor({ initial, notify }: { initial: SettingsResult; notify: 
   const [rates, setRates] = useState<Partial<typeof initial.rates>>(initial.rates);
   const [orderRequirements,setOrderRequirements]=useState(initial.orderRequirements||optionalOrderPdfs);
   const [tab, setTab] = useState("site");
+  const [cutDirty, setCutDirty] = useState(false);
+  const [savedRates, setSavedRates] = useState(rates);
+  const finishingDirty = Object.keys(finishingServices).some(key => rates[key as keyof typeof rates] !== savedRates[key as keyof typeof rates]);
+  const unsaved = tab === "rates" && (cutDirty || finishingDirty);
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    const navigate = (event: MouseEvent) => {
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!link || link.target === "_blank" || event.ctrlKey || event.metaKey || event.shiftKey || link.href === location.href) return;
+      if (!window.confirm("تغییرات تعرفه ذخیره نشده است. از صفحه خارج می‌شوید؟")) {
+        event.preventDefault(); event.stopPropagation();
+      }
+    };
+    window.addEventListener("beforeunload", warn); document.addEventListener("click", navigate, true);
+    return () => {window.removeEventListener("beforeunload", warn); document.removeEventListener("click", navigate, true);};
+  }, [unsaved]);
   const [busy, setBusy] = useState(false);
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -562,6 +579,7 @@ function SettingsEditor({ initial, notify }: { initial: SettingsResult; notify: 
         method: "PUT",
         body: JSON.stringify(tab === "rates" ? { finishingRates: Object.fromEntries(Object.keys(finishingServices).map(key=>[key,rates[key as keyof typeof rates]])) } : { site, orderRequirements }),
       });
+      if (tab === "rates") setSavedRates({...rates});
       notify("تنظیمات ذخیره شد.");
     } catch (e) {
       notify((e as Error).message, true);
@@ -586,14 +604,18 @@ function SettingsEditor({ initial, notify }: { initial: SettingsResult; notify: 
           <button
             className={tab === k ? "active" : ""}
             aria-pressed={tab === k}
-            onClick={() => setTab(k)}
+            onClick={() => {
+              if (k === tab || (unsaved && !window.confirm("تغییرات تعرفه ذخیره نشده است. بخش دیگری باز شود؟"))) return;
+              if (tab === "rates") {setCutDirty(false); setRates(savedRates);}
+              setTab(k);
+            }}
             key={k}
           >
             {t}
           </button>
         ))}
       </div>
-      {tab === "rates" && <CutTariffEditor legacy={initial.rates}/>}
+      {tab === "rates" && <CutTariffEditor onDirty={setCutDirty}/>}
       <form onSubmit={save} className="panel">
         {tab === "site" ? (
           <div className="form-grid">
@@ -678,6 +700,7 @@ function SettingsEditor({ initial, notify }: { initial: SettingsResult; notify: 
         <button className="button" disabled={busy} style={{ marginTop: 25 }}>
           <Save size={17} />{busy ? "در حال ذخیره…" : tab === "rates" ? "ذخیره خدمات تکمیلی" : "ذخیره تنظیمات"}
         </button>
+        {tab === "rates" && finishingDirty && <button type="button" disabled={busy} className="button button-outline" onClick={() => setRates(savedRates)}>لغو تغییرات خدمات تکمیلی</button>}
       </form>
     </div>
   );

@@ -65,6 +65,10 @@ try{
   const renewing=item.url.startsWith('/session/renew')||item.url.startsWith('/admin/session-renew');
   // Authenticated pages keep a realtime subscription and can poll while they are ready.
   const response=await p.goto(base+item.url,{waitUntil:'domcontentloaded'});
+  if(item.role==='guest' && protectedPaths.includes(item.url)){
+   await p.waitForURL(url=>url.pathname==='/customer');
+   await p.locator('form input[name=password]').waitFor({state:'visible'});
+  }
   if(renewing)await p.getByRole('heading',{name:'دوباره وارد حساب شوید',exact:true}).waitFor({timeout:10000});
   else await p.getByRole('heading').first().waitFor({state:'visible'});
   if(item.role==='customer' && item.url==='/calculator') await p.locator('.book-calculator .catalog-trigger').first().waitFor();

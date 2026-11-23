@@ -706,6 +706,12 @@ namespace ChapGiti.Infrastructure.Persistence.Ef.Migrations
                         .HasColumnType("int")
                         .HasColumnName("version");
 
+                    b.Property<bool>("IsProposed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_proposed");
+
                     b.Property<string>("Rates")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")

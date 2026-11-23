@@ -1,5 +1,5 @@
 import { bookSizes, type BookDetails } from "./book-options";
-import { quoteBook } from "./book-pricing";
+import { quantitySavings, quoteBook } from "./book-pricing";
 export type Rates = Record<
   "bw" | "color" | "cream" | "coated" | "soft" | "hard" | "spiral" | "setup" | "coverPrint" | "coverPaper" | "lamination" |
   "roundCorners" | "shrink" | "goldFoil" | "silverFoil" | "spotUV" | "endpaperBw" | "endpaperColor" |
@@ -58,8 +58,7 @@ export function quote(spec: PrintSpec, rates: Rates, discountPercent = 0) {
   );
   const binding = rates[spec.binding];
   const subtotal = (print + binding) * spec.quantity;
-  const discount = Math.max(0, Math.min(100, Math.trunc(discountPercent))) / 100;
-  const discountAmount = Math.floor(subtotal * discount);
+  const discountAmount = quantitySavings(subtotal, discountPercent);
   const total = subtotal - discountAmount + rates.setup;
   return {
     print,

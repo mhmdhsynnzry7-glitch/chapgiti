@@ -11,10 +11,12 @@ public sealed class AdminContentService(
 {
     public async Task<UseCaseResult> Settings()
     {
+        var stored = await content.StoredRates() ?? new JsonObject();
         return UseCaseResult.Json(new
         {
             site = await content.Read("site", "settings"),
-            rates = await content.StoredRates() ?? new JsonObject(),
+            rates = new JsonObject(stored.Where(entry => !CutTariff.Keys.Contains(entry.Key))
+                .Select(entry => KeyValuePair.Create(entry.Key, entry.Value?.DeepClone()))),
             orderRequirements = await content.OrderRequirements(),
             sms = sms.Availability
         });
@@ -80,7 +82,7 @@ public sealed class AdminContentService(
     private JsonObject ValidatedRates(JsonObject input,bool finishingOnly)
     {
         var result=new JsonObject();
-        foreach (var key in defaults.Root["rates"]!.AsObject().Select(item=>item.Key).Where(k=>!finishingOnly || !CutTariff.Keys.Contains(k)))
+        foreach (var key in defaults.Root["rates"]!.AsObject().Select(item=>item.Key).Where(k=>!CutTariff.Keys.Contains(k) || (!finishingOnly && input.ContainsKey(k))))
         {
             try { result[key]=Input.Number(input,key,0,10_000_000); }
             catch (RuleViolation) { throw new UseCaseException(ErrorKind.Invalid,"تعرفه‌ها باید عدد صحیح بین صفر و ۱۰٬۰۰۰٬۰۰۰ تومان باشند.",code:"TARIFF_INVALID"); }
