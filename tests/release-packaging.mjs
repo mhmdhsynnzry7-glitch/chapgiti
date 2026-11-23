@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import {mkdtempSync,mkdirSync,writeFileSync,rmSync,realpathSync,existsSync,readFileSync} from "node:fs";
+import {randomBytes} from "node:crypto";
+import {isDeepStrictEqual} from "node:util";
+import {sealFrontend, initializeFrontend, checkInitializedFrontend, checkSealedFrontend, frameworkManifests} from "../scripts/initialize-frontend.mjs";
+import {cpSync,mkdtempSync,mkdirSync,writeFileSync,rmSync,realpathSync,existsSync,readFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
-import {spawnSync} from "node:child_process";
+import {spawn,spawnSync} from "node:child_process";
 import {allowedReleaseFile,migrationChecksum,migrationInventory,scanPackage,secretCandidates,sha256,fileHashes} from "../scripts/release-files.mjs";
 
 import {scripts, guides, iis, requireFile, runtimeFiles, sourceMigrations, matchMetadata, embedded, checkLayout, requiredSourcePaths, verifySourceInventory} from "../scripts/release-contract.mjs";
@@ -29,6 +32,53 @@ const candidates = secretCandidates({MELIPAYAMAK_CONSOLE_API_KEY: "Mock.Api.Key.
 check(candidates.length === 3 && !candidates.includes("true"), "only meaningful configured secret values are selected");
 const tempRoot = realpathSync(tmpdir()), scratch = mkdtempSync(path.join(tempRoot, "chap-release-test-"));
 try {
+  const stagedFrontend = path.join(scratch, "standalone");
+  const [props, prerender, actions] = frameworkManifests.map(name => path.join(stagedFrontend, name));
+  mkdirSync(path.dirname(props), {recursive:true});
+  const preview = Object.fromEntries([["previewModeId",16],["previewModeSigningKey",32],["previewModeEncryptionKey",32]]
+    .map(([name,size]) => [name,randomBytes(size).toString("hex")]));
+  const actionKey = randomBytes(32).toString("base64");
+  const putJson = (file, data) => writeFileSync(file, JSON.stringify(data));
+  const readJson = file => JSON.parse(readFileSync(file,"utf8"));
+  putJson(props, preview);
+  putJson(prerender, {version:4,routes:{},preview});
+  putJson(actions, {node:{bound:{}},edge:{},encryptionKey:actionKey});
+  assert.throws(()=>sealFrontend(stagedFrontend), /Server Actions/); checks++;
+  putJson(actions, {node:{},edge:{},encryptionKey:actionKey});
+  const buildKeys=sealFrontend(stagedFrontend);
+  check(buildKeys.length===4 && scanPackage(stagedFrontend,buildKeys).passed, "all build-specific framework keys are excluded");
+  checkSealedFrontend(stagedFrontend); checks++;
+  assert.throws(()=>checkInitializedFrontend(stagedFrontend)); checks++;
+  const parallelRoot=path.join(scratch,"parallel");
+  mkdirSync(path.join(parallelRoot,"scripts"),{recursive:true});
+  cpSync(stagedFrontend,path.join(parallelRoot,"frontend"),{recursive:true});
+  putJson(path.join(parallelRoot,"RELEASE-MANIFEST.json"),{});
+  for(const name of ["initialize-frontend.mjs","start-node.mjs"])
+    cpSync(path.resolve("scripts",name),path.join(parallelRoot,"scripts",name));
+  const unprepared=spawnSync(process.execPath,["scripts/start-node.mjs"],{cwd:parallelRoot,encoding:"utf8",windowsHide:true});
+  check(unprepared.status!==0 && unprepared.stderr.includes("Initialize the extracted frontend"),"an unprepared release stops before backend startup");
+  const parallelInit=()=>new Promise((resolve,reject)=>{
+    const child=spawn(process.execPath,["scripts/initialize-frontend.mjs"],{cwd:parallelRoot,stdio:"ignore",windowsHide:true});
+    child.once("error",reject);child.once("close",resolve);
+  });
+  check((await Promise.all([parallelInit(),parallelInit(),parallelInit()])).every(code=>code===0),"concurrent initializers converge on one complete key set");
+  checkInitializedFrontend(path.join(parallelRoot,"frontend")); checks++;
+  const second=path.join(scratch,"second-install");
+  cpSync(stagedFrontend,second,{recursive:true});
+  initializeFrontend(stagedFrontend);
+  const local=readJson(props);
+  check(Object.keys(local).every(k=>local[k]!==preview[k]) && readJson(actions).encryptionKey!==actionKey,"destination generates its own four keys");
+  check(isDeepStrictEqual(readJson(prerender).preview,local),"both Next.js preview consumers read the same keys");
+  const ready=frameworkManifests.map(name=>sha256(readFileSync(path.join(stagedFrontend,name))));
+  initializeFrontend(stagedFrontend);
+  check(ready.every((hash,i)=>hash===sha256(readFileSync(path.join(stagedFrontend,frameworkManifests[i])))),"repeated initialization preserves installed keys");
+  rmSync(prerender);
+  initializeFrontend(stagedFrontend);
+  check(isDeepStrictEqual(readJson(prerender).preview,local),"interrupted installation can resume with the stored preview key set");
+  initializeFrontend(second);
+  check(Object.keys(local).every(k=>readJson(path.join(second,frameworkManifests[0]))[k]!==local[k]),"independent installations have distinct keys");
+  const alteredManifest=readJson(prerender);alteredManifest.routes={"/changed":{}};putJson(prerender,alteredManifest);
+  assert.throws(()=>checkInitializedFrontend(stagedFrontend),/differs/); checks++;
   const migrations = path.join(scratch, "migrations");mkdirSync(migrations);
   for (let i=1;i<=9;i++) writeFileSync(path.join(migrations,String(i).padStart(3,"0")+"_fixture.sql"),"-- synthetic checksum fixture\n");
   const inventory=migrationInventory(migrations);
@@ -70,6 +120,9 @@ try {
   const stage=path.join(scratch,"extracted");
   const put=(name,bytes)=>{const f=path.join(stage,name);mkdirSync(path.dirname(f),{recursive:true});writeFileSync(f,bytes);};
   for(const name of runtimeFiles) put(name,"fixture");
+  put("frontend/.next/prerender-manifest.json.template", JSON.stringify({preview:{}}));
+  put("frontend/.next/server/preview-props.json.template", "{}");
+  put("frontend/.next/server/server-reference-manifest.json.template", JSON.stringify({node:{},edge:{}}));
   const ef=sourceMigrations(".");
   check(ef.ef.length>=3 && ef.legacy.length===9,"reviewed EF IDs, snapshot and frozen legacy inventory");
   const sourceDir="backend/ChapGiti.Infrastructure/Persistence";

@@ -3,11 +3,13 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { allowedReleaseFile, filesIn, migrationInventory, sha256 } from "./release-files.mjs";
 
+import { checkSealedFrontend, frameworkManifests } from "./initialize-frontend.mjs";
+
 const efRoot = "backend/ChapGiti.Infrastructure/Persistence/Ef";
 export const knownEf = ["20261117090230_Legacy009Baseline", "20261117092337_CatalogAndMagazine", "20261118113729_TicketMessageReadState",
   "20261122130922_CutTariffVersions", "20261123062444_ProposedCutTariffs"];
 export const embedded = ["InitialPrintCatalog.json", "Legacy009Baseline.sql"];
-export const scripts = ["dotnet-runtime.mjs", "start-node.mjs", "db-setup.mjs", "admin-setup.mjs", "check-deploy.mjs", "deployment-context.mjs", "verify-release.mjs", "release-files.mjs", "release-contract.mjs"];
+export const scripts = ["dotnet-runtime.mjs", "start-node.mjs", "db-setup.mjs", "admin-setup.mjs", "check-deploy.mjs", "deployment-context.mjs", "verify-release.mjs", "release-files.mjs", "release-contract.mjs", "initialize-frontend.mjs"];
 export const iis = ["install-service.ps1", "service-config.ps1", "GitiNode.xml.template", "configure-iis.ps1", "proxy-config.ps1", "configure-otp.ps1", "web.config"];
 export const guides = ["WINDOWS-SERVER-INSTALL-FA.md", "DATABASE-MIGRATION-FA.md", "CHAP-EF-MIGRATION-ACTIVATION-FA.md", "SIGNALR-REALTIME-FA.md", "SQL2025-ACCEPTANCE-FA.md", "UPGRADE-CUT-TARIFFS-FA.md", "CUT-TARIFF-POLICY-FA.md"];
 export const runtimeFiles = [
@@ -19,6 +21,7 @@ export const runtimeFiles = [
     "Microsoft.Data.SqlClient.SNI.dll", "Microsoft.EntityFrameworkCore.dll", "Microsoft.EntityFrameworkCore.Relational.dll",
     "Microsoft.EntityFrameworkCore.SqlServer.dll", "Microsoft.AspNetCore.SignalR.Core.dll", "Microsoft.AspNetCore.SignalR.Protocols.Json.dll",
     "Microsoft.AspNetCore.Http.Connections.dll", "coreclr.dll", "hostfxr.dll", "hostpolicy.dll"].map(name => "backend/publish/" + name),
+  ...frameworkManifests.map(name => "frontend/" + name + ".template"),
   ...scripts.map(n=>"scripts/"+n), ...iis.map(n=>"deploy/iis/"+n), ...guides.map(n=>"docs/"+n),
   "package.json", ".env.example", "README.md", "SOURCE-INVENTORY.json", "MIGRATIONS-CHECKSUMS.json", "deploy/sql/acceptance-2025.sql", "deploy/sql/check-target.ps1",
   ...embedded.map(n=>"migrations/ef/"+n)
@@ -110,11 +113,12 @@ export function checkLayout(root, manifest) {
   if (![".js",".css"].every(ext=>assets.some(n=>n.endsWith(ext) && statSync(path.join(root,"frontend/.next/static",n)).size>0))) throw Error("Missing Next.js standalone static assets.");
   const next=json("frontend/.next/required-server-files.json");
   if(next.config.output!=="standalone" || json("frontend/node_modules/next/package.json").version!==manifest.frontendVersions.next) throw Error("Standalone framework mismatch.");
+  checkSealedFrontend(path.join(root, "frontend"));
   if (!Array.isArray(next.files) || !next.files.length) throw Error("Missing Next.js traced server file list.");
   for (const file of next.files) {
     const name=file.replaceAll("\\","/");
     if (!name.startsWith(".next/") || name.split("/").includes("..")) throw Error("Invalid Next.js traced path.");
-    requireFile(root,"frontend/"+name);
+    requireFile(root,"frontend/"+name+(frameworkManifests.includes(name) ? ".template" : ""));
   }
   const native=filesIn(path.join(root,"frontend/node_modules/@img/sharp-win32-x64/lib"));
   for(const pattern of [/^sharp-win32-x64(?:-[\d.]+)?\.node$/, /^libvips-\d+\.dll$/, /^libvips-cpp-[\d.]+\.dll$/])
