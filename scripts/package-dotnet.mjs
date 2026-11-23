@@ -5,6 +5,7 @@ import {spawnSync} from "node:child_process";
 import {allowedReleaseFile, fileHashes, migrationInventory, scanPackage, configuredSecrets, sha256, verifyArchive} from "./release-files.mjs";
 import {embedded, guides, iis, inspectCompiled, matchMetadata, scripts, sourceMigrations} from "./release-contract.mjs";
 import {inputDigest, requireBuildReceipt, sourceInventory} from "./release-source.mjs";
+import {sealFrontend} from "./initialize-frontend.mjs";
 import {verifyDirectory} from "./verify-release.mjs";
 
 const root = process.cwd();
@@ -47,6 +48,7 @@ function copy(from,to=from) {
 try {
   for(const [from,to] of [["frontend/publish","frontend"],["backend/publish","backend/publish"]])
     cpSync(from,path.join(stage,to),{recursive:true,dereference:true,filter:file=>allowedReleaseFile(path.relative(root,file))});
+  const removedFrameworkKeys = sealFrontend(path.join(stage, "frontend"));
   for(const [dir,names] of [["scripts",scripts],["deploy/iis",iis],["docs",guides]])
     for(const name of names) copy(dir+"/"+name);
   copy("deploy/iis/production.env.example",".env.example");
@@ -60,7 +62,7 @@ try {
   matchMetadata(expected,compiled);
   write("MIGRATIONS-CHECKSUMS.json",{algorithm:"SHA256(UTF8(File.ReadAllText, CRLF to LF))",order:migrations,compiled});
   write("SOURCE-INVENTORY.json",sourceInventory(root,revision));
-  const scan=scanPackage(stage,await configuredSecrets(root));
+  const scan=scanPackage(stage,[...removedFrameworkKeys, ...await configuredSecrets(root)]);
   if(!scan.passed) throw Error("Private material detected in staging: "+scan.problems.map(p=>p.file).join(", "));
   const files=fileHashes(stage);
   write("RELEASE-MANIFEST.json",{version:stamp,createdAtUtc:new Date().toISOString(),packageMode:"release-only",displayTimeZone:"Asia/Tehran",source:{gitRevision:revision,branch,dirtyWorkingTree:dirty,sourceSha256},
