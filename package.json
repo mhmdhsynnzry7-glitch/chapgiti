@@ -9,7 +9,7 @@
     "dev": "node scripts/dev-dotnet.mjs",
     "dev:status": "node scripts/dev-dotnet.mjs status",
     "dev:stop": "node scripts/dev-dotnet.mjs stop",
-    "test:dev-processes": "node --test tests/development/process-lifecycle.test.mjs",
+    "test:dev-processes": "node --test tests/development/process-lifecycle.test.mjs tests/development/browser-port.test.mjs",
     "dev:frontend": "npm --prefix frontend run dev",
     "build": "node scripts/build-dotnet.mjs",
     "build:frontend": "npm --prefix frontend run build",

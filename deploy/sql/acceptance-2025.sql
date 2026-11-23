@@ -26,6 +26,38 @@ BEGIN
         THROW 51207, 'Catalog index missing.', 1;
     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Articles') AND name='IX_Articles_PublicList' AND is_disabled=0)
         THROW 51208, 'Magazine index missing.', 1;
+    IF NOT EXISTS (SELECT 1 FROM sys.columns c JOIN sys.default_constraints d ON d.object_id=c.default_object_id
+                   WHERE c.object_id=OBJECT_ID('dbo.Cut_Tariff_Versions') AND c.name='is_proposed'
+                     AND TYPE_NAME(c.system_type_id)='bit' AND c.is_nullable=0
+                     AND LOWER(REPLACE(REPLACE(REPLACE(d.definition,'(',''),')',''),' ','')) IN ('0','convert[bit],0','convertbit,0'))
+        THROW 51209, 'Tariff proposal flag or default missing.', 1;
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes i WHERE i.object_id=OBJECT_ID('dbo.Cut_Tariff_Versions') AND i.is_primary_key=1
+                   AND INDEX_COL('dbo.Cut_Tariff_Versions', i.index_id, 1)='cut_id'
+                   AND INDEX_COL('dbo.Cut_Tariff_Versions', i.index_id, 2)='version')
+        THROW 51210, 'Tariff version primary key missing.', 1;
+    IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys k JOIN sys.foreign_key_columns c ON c.constraint_object_id=k.object_id
+                   WHERE k.parent_object_id=OBJECT_ID('dbo.Cut_Tariff_Versions') AND k.referenced_object_id=OBJECT_ID('dbo.Print_Catalog_Options')
+                     AND COL_NAME(c.parent_object_id,c.parent_column_id)='cut_id' AND COL_NAME(c.referenced_object_id,c.referenced_column_id)='id'
+                     AND k.is_disabled=0 AND k.is_not_trusted=0 AND k.delete_referential_action=0)
+        THROW 51211, 'Tariff catalog foreign key missing or untrusted.', 1;
+    IF (SELECT COUNT(*) FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.Cut_Tariff_Versions')
+        AND name IN ('CK_CutTariff_Rates','CK_CutTariff_Version') AND is_disabled=0 AND is_not_trusted=0) <> 2
+        THROW 51212, 'Tariff constraints missing or untrusted.', 1;
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes i WHERE i.object_id=OBJECT_ID('dbo.Ticket_Messages')
+                   AND i.name='IX_TicketMessages_Unread' AND i.is_disabled=0 AND i.has_filter=1
+                   AND INDEX_COL('dbo.Ticket_Messages',i.index_id,1)='actor' AND INDEX_COL('dbo.Ticket_Messages',i.index_id,2)='ticket_id'
+                   AND i.filter_definition LIKE '%read_at%IS NULL%')
+        THROW 51213, 'Unread ticket message index missing or incompatible.', 1;
+    EXEC(N'IF EXISTS (SELECT 1 FROM dbo.Print_Catalog_Options o WHERE o.kind=''bookSizes'' AND o.active=1
+                 AND JSON_VALUE(o.metadata,''$.isCustom'')=''false'' AND JSON_VALUE(o.metadata,''$.unit'')=''cm''
+                 AND NOT EXISTS (SELECT 1 FROM dbo.Cut_Tariff_Versions t WHERE t.cut_id=o.id))
+               THROW 51214, ''An eligible fixed cut has no tariff history.'', 1;
+           IF EXISTS (SELECT 1 FROM dbo.Cut_Tariff_Versions t WHERE t.is_proposed=1 AND
+               (t.version<>1 OR (SELECT COUNT(*) FROM OPENJSON(t.rates))<>11 OR
+               (SELECT COUNT(DISTINCT [key]) FROM OPENJSON(t.rates) WHERE [type]=2 AND [key] IN
+                 (''bw'',''color'',''cream'',''coated'',''soft'',''hard'',''spiral'',''coverPrint'',''coverPaper'',''lamination'',''setup''))<>11))
+               THROW 51215, ''Invalid proposed tariff revision or rate set.'', 1;
+           SELECT COUNT_BIG(*) AS proposed_tariff_revisions FROM dbo.Cut_Tariff_Versions WHERE is_proposed=1;');
     EXEC(N'SELECT COUNT_BIG(*) AS catalog_options FROM dbo.Print_Catalog_Options WHERE code IS NOT NULL;
            SELECT COUNT_BIG(*) AS orders_with_approved_pdf FROM dbo.Orders o JOIN dbo.Files f ON f.id=o.approved_file_id AND f.order_id=o.id WHERE o.workflow_version>=1;
            SELECT COUNT_BIG(*) AS quote_revisions FROM dbo.Order_Quotes;

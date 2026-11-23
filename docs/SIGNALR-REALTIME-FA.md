@@ -48,7 +48,7 @@ principal و گروه نقش با شناسهٔ داخلیِ server-side ساخت
 
 برای rollout آینده روی همان Windows Server/IIS و با مجوز جداگانه:
 
-1. WebSocket Protocol و پشتیبانی ARR/URL Rewrite از upgrade فعال باشد.
+1. WebSocket Protocol و عبور Upgrade در ARR را در سطح سرور بررسی کنید. فایل web.config سایت تنظیم WebSocket را به ارث می‌برد. تعریف محلی این بخش روی سروری که آن را قفل کرده است خطای 500.19 با کد 0x80070021 می‌دهد. [راهنمای IIS مایکروسافت](https://learn.microsoft.com/en-us/troubleshoot/developer/webapps/iis/site-behavior-performance/http-error-500-19-webpage)
 2. قاعدهٔ **همان origin عمومی** برای `/api/realtime/{customer|admin}/{notifications|support}` و `/negotiate` هرکدام پیش از قاعدهٔ عمومی Next قرار گیرد و با حفظ کامل مسیر به API داخلی `127.0.0.1:5100` برود. بقیهٔ سایت همچنان به Next داخلی 3000 می‌رود. مسیرهای موجود/binding دیگر سایت‌ها تغییر داده نشوند.
 3. Cookie، Origin، Accept، Content-Type و هدرهای upgrade عبور کنند؛ HTTPS/WSS عمومی و اعتماد پروکسی طبق تنظیم قبلی حفظ شوند. backend روی loopback باقی بماند.
 4. SSE buffer یا cache نشود؛ `no-store, no-transform` حفظ و timeout پراکسی با زمان انتظار transport سازگار باشد. CDN نباید روی این مسیر cache یا پاسخ HTML challenge بسازد. پشتیبانی WebSocket CDN فرض نشده است؛ قطع آن باید با SSE/LongPolling و سپس polling عادی قابل‌تحمل باشد.

@@ -26,7 +26,7 @@ const hubs=readFileSync('backend/ChapGiti.Api/Http/ApiRegistration.cs','utf8'), 
 for(const [hub,kind] of [['NotificationsHub','notifications'],['SupportHub','support']])check(hubs.includes('MapHub<'+hub+'>("/api/realtime/" + scope + "/'+kind+'").RequireAuthorization')&&client.includes('"'+kind+'"'),'authorized backend/client route agrees: '+kind);
 const sqlScript=readFileSync('deploy/sql/acceptance-2025.sql','utf8');
 check(!/\b(?:INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER|MERGE|CREATE)\b/i.test(sqlScript),'target acceptance queries are read-only');
-for(const token of ["SERVERPROPERTY('ServerName')","'ProductMajorVersion'","'EngineEdition'","compatibility_level=170","dbo.Schema_Migrations","dbo.__EFMigrationsHistory","dbo.Print_Catalog_Options","dbo.Articles","dbo.Order_Quotes","dbo.Ticket_Messages"]){
+for(const token of ["SERVERPROPERTY('ServerName')","'ProductMajorVersion'","'EngineEdition'","compatibility_level=170","dbo.Schema_Migrations","dbo.__EFMigrationsHistory","dbo.Print_Catalog_Options","dbo.Articles","dbo.Order_Quotes","dbo.Ticket_Messages","dbo.Cut_Tariff_Versions","is_proposed","CK_CutTariff_Rates","CK_CutTariff_Version","IX_TicketMessages_Unread","OPENJSON(t.rates)"]){
   check(sqlScript.includes(token),'guard or post-migration projection present: '+token);
 }
 const deployEnv=readFileSync('deploy/iis/production.env.example','utf8');

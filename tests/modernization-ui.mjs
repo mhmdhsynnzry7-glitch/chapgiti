@@ -14,7 +14,7 @@ import { nameLayoutChecks, passwordLabelChecks } from "./registration-form-ui.mj
 import { accessibilityResponsiveChecks } from "./accessibility-responsive-ui.mjs";
 import { servicesCmsChecks, bannerContactChecks, publicCleanupChecks, paginationChecks } from "./cms-v2-ui.mjs";
 import assert from "node:assert/strict";
-import net from "node:net";
+import { browserPort } from "./browser-port.mjs";
 import path from "node:path";
 import { existsSync, mkdirSync, createWriteStream, writeFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
@@ -43,12 +43,6 @@ assert.ok(existsSync(chrome), "Set CHROME_PATH to an installed Chrome/Chromium e
 const checks = [], children = [], logs = [], browserErrors = [];
 const check = (condition, name) => { assert.ok(condition, name); checks.push(name); console.log("PASS " + name); };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function freePort() {
-  const server = net.createServer();
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
-  const port = server.address().port;
-  await new Promise(resolve => server.close(resolve)); return port;
-}
 function start(file, args, options, name) {
   const logDirectory = process.env.CHAP_BROWSER_EVIDENCE || ".qa";
   mkdirSync(logDirectory, { recursive: true });
@@ -83,7 +77,7 @@ async function ready(url, child) {
   throw new Error("Test process did not become ready: " + url + " (" + lastResult + ")");
 }
 
-const port = await freePort(), base = "http://127.0.0.1:" + port;
+const port = await browserPort(), base = "http://127.0.0.1:" + port;
 const cleanEnv = { ...process.env };
 for (const key of Object.keys(cleanEnv)) if (/^(SQLSERVER_|ConnectionStrings__|Storage__|Sms__|Otp__|OTP_|MELIPAYAMAK_|DATA_DIR$)/i.test(key)) delete cleanEnv[key];
 // Keep browser verification output separate from a developer's running Debug API.
