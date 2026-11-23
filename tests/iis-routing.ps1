@@ -5,7 +5,8 @@ $template = Join-Path $PSScriptRoot '../deploy/iis/web.config'
 $rules = @($xml.configuration.'system.webServer'.rewrite.rules.rule)
 if ($rules.Count -ne 3 -or $rules[0].action.type -ne 'Redirect' -or $rules[0].action.url -ne 'https://chapgiti.ir/{R:1}' -or $rules[0].stopProcessing -ne 'true') { throw 'Canonical public TLS origin must precede proxy rules.' }
 if ($rules[0].conditions.add[0].input -ne '{HTTPS}' -or $rules[0].conditions.add[1].input -ne '{HTTP_HOST}' -or $rules[0].conditions.add[1].negate -ne 'true') { throw 'Canonical scheme/host mismatch.' }
-if ($xml.configuration.'system.webServer'.webSocket.enabled -ne 'true') { throw 'WebSocket disabled.' }
+if ($xml.SelectSingleNode('/configuration/system.webServer/webSocket')) { throw 'The site must inherit the server WebSocket section.' }
+Write-Output 'PASS site inherits the locked WebSocket section'
 foreach ($rule in $rules[1..2]) {
     if ($rule.conditions -or $rule.stopProcessing -ne 'true' -or $rule.action.type -ne 'Rewrite' -or $rule.action.appendQueryString -ne 'true') { throw 'Every transport and HTTP method must preserve query and route.' }
     $headers = @($rule.serverVariables.set)

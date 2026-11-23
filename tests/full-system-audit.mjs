@@ -2,7 +2,7 @@
 // network allowlist, no operational configuration, SQL connection or real SMS.
 import assert from 'node:assert/strict';
 import { submitPrintRequest } from './pdf-fixture.mjs';
-import net from 'node:net';
+import { browserPort } from "./browser-port.mjs";
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs';
@@ -16,8 +16,7 @@ const runtime=['frontend/node_modules/playwright/index.mjs','.qa/browser-tools/n
 const {chromium}=await import(pathToFileURL(path.resolve(runtime)).href);
 const children=[],logs=[],errors=[],result={stage,buildId:readFileSync('frontend/.next/BUILD_ID','utf8').trim(),pages:[],responsive:[],accessibility:[],performance:[],load:[],checks:[],errors};
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
-async function freePort(){const s=net.createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const p=s.address().port;await new Promise(r=>s.close(r));return p;}
-const port=await freePort(),base=`http://127.0.0.1:${port}`,env={...process.env};
+const port=await browserPort(),base=`http://127.0.0.1:${port}`,env={...process.env};
 for(const key of Object.keys(env))if(/^(SQLSERVER_|ConnectionStrings__|Storage__|Sms__|Otp__|OTP_|MELIPAYAMAK_|DATA_DIR$)/i.test(key))delete env[key];
 function start(file,args,name,options={}){const log=createWriteStream(path.join(out,name+'.log'));logs.push(log);const c=spawn(file,args,{cwd:root,env,windowsHide:true,stdio:['ignore','pipe','pipe'],...options});c.stdout.pipe(log);c.stderr.pipe(log);children.push(c);return c;}
 async function stop(c){if(!c?.pid||c.exitCode!==null)return;await new Promise(r=>spawn('taskkill.exe',['/PID',String(c.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'}).once('exit',r));}

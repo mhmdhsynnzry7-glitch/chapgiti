@@ -4,11 +4,12 @@ import { spawnSync } from "node:child_process";
 import { allowedReleaseFile, filesIn, migrationInventory, sha256 } from "./release-files.mjs";
 
 const efRoot = "backend/ChapGiti.Infrastructure/Persistence/Ef";
-export const knownEf = ["20261117090230_Legacy009Baseline", "20261117092337_CatalogAndMagazine", "20261118113729_TicketMessageReadState"];
+export const knownEf = ["20261117090230_Legacy009Baseline", "20261117092337_CatalogAndMagazine", "20261118113729_TicketMessageReadState",
+  "20261122130922_CutTariffVersions", "20261123062444_ProposedCutTariffs"];
 export const embedded = ["InitialPrintCatalog.json", "Legacy009Baseline.sql"];
 export const scripts = ["dotnet-runtime.mjs", "start-node.mjs", "db-setup.mjs", "admin-setup.mjs", "check-deploy.mjs", "deployment-context.mjs", "verify-release.mjs", "release-files.mjs", "release-contract.mjs"];
 export const iis = ["install-service.ps1", "service-config.ps1", "GitiNode.xml.template", "configure-iis.ps1", "proxy-config.ps1", "configure-otp.ps1", "web.config"];
-export const guides = ["WINDOWS-SERVER-INSTALL-FA.md", "DATABASE-MIGRATION-FA.md", "CHAP-EF-MIGRATION-ACTIVATION-FA.md", "SIGNALR-REALTIME-FA.md", "SQL2025-ACCEPTANCE-FA.md"];
+export const guides = ["WINDOWS-SERVER-INSTALL-FA.md", "DATABASE-MIGRATION-FA.md", "CHAP-EF-MIGRATION-ACTIVATION-FA.md", "SIGNALR-REALTIME-FA.md", "SQL2025-ACCEPTANCE-FA.md", "UPGRADE-CUT-TARIFFS-FA.md", "CUT-TARIFF-POLICY-FA.md"];
 export const runtimeFiles = [
   "frontend/server.js", "frontend/.next/BUILD_ID", "frontend/.next/required-server-files.json", "frontend/.next/server/app-paths-manifest.json",
   "frontend/node_modules/next/package.json", "frontend/node_modules/@next/env/dist/index.js", "frontend/public/fonts/vazirmatn.woff2",
