@@ -12,7 +12,7 @@ function moduleUrl(file, replacements = {}) {
 const bookUrl = moduleUrl("frontend/lib/book-pricing.ts", { "./book-options": optionsUrl });
 const defaultRates=JSON.parse(readFileSync(new URL("../scripts/legacy-print-rates.json",import.meta.url),"utf8"));
 const { defaultSpec, quote } = await import(moduleUrl("frontend/lib/pricing.ts", { "./book-options": optionsUrl, "./book-pricing": bookUrl }));
-const { detailsFromSpec, withBookDetails } = await import(bookUrl);
+const { detailsFromSpec, withBookDetails, quantitySavings } = await import(bookUrl);
 const { finishingServices } = await import(optionsUrl);
 const { finishingUnavailable } = await import(moduleUrl("frontend/lib/finishing-compatibility.ts", { "./book-options": optionsUrl }));
 let checks = 0;
@@ -31,5 +31,10 @@ for (const [key, service] of Object.entries(finishingServices)) {
   check(changed.total - original.total === 123 && changed.extras - original.extras === 123, key + " admin price feeds frontend per-copy estimate without conversion");
   const scaled = quote(withBookDetails({ ...defaultSpec, size: "vaziri", quantity: 100 }, { ...details, extras: [key] }), defaultRates);
   check(scaled.finishing[0].unit === Math.ceil(defaultRates[key]), key + " keeps the same per-copy rate across cuts");
+}
+check(quantitySavings(100, 29) === 29, "integer toman discount agrees with the backend at a binary rounding boundary");
+for (const [size, extra, expected] of [["vaziri",27,3423000],["a4",49,3621000]]) {
+  const calculated=quote({...defaultSpec,size,pages:120,quantity:100},{...defaultRates,bw:defaultRates.bw+extra},25);
+  check(calculated.total===expected && calculated.setup===120000, "same separate cut revision, subtotal discount and one setup as the backend: "+size);
 }
 console.log(`${checks} finishing compatibility and frontend pricing checks passed.`);

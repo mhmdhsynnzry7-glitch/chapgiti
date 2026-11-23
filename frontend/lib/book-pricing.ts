@@ -95,6 +95,11 @@ export function bookSpine(
     ) / 10
   );
 }
+// Input amounts are whole toman. Divide after multiplying, as in QuantityDiscount.Savings.
+export function quantitySavings(subtotal: number, percentage: number) {
+  const percent = Math.max(0, Math.min(100, Math.trunc(percentage)));
+  return Number(BigInt(subtotal) * BigInt(percent) / BigInt(100));
+}
 export function quoteBook(
   spec: PrintSpec,
   rates: Rates,
@@ -191,8 +196,7 @@ export function quoteBook(
   }));
   const extras = finishing.reduce((sum, row) => sum + row.unit, 0);
   const subtotal = (print + binding + cover + extras) * spec.quantity;
-  const discount = Math.max(0, Math.min(100, Math.trunc(discountPercent))) / 100;
-  const discountAmount = Math.floor(subtotal * discount),
+  const discountAmount = quantitySavings(subtotal, discountPercent),
     total = subtotal - discountAmount + rates.setup;
   return {
     print,

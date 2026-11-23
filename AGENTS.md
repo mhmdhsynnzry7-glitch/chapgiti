@@ -100,6 +100,18 @@ The operational SQL Server database **`ChapGiti` contains existing project data*
 
 If isolated integration-test infrastructure is unavailable, report the limitation; **do not substitute writes to real data**.
 
+### Controlled Development migrations
+
+The owner's standing authorization of 2026-11-23 covers required, reviewed migrations only on the existing local Development `ChapGiti`. This section governs current schema deliveries and supersedes older source-only directions and one-time backup waivers. A narrower instruction for a particular task still applies.
+
+1. Follow **Schema change → Migration → Preflight → Backup → Apply migration → Verify → Tests → Development startup**. Compare the source, compiled migration inventory, both histories, legacy checksums and actual schema. Confirm the local machine, default SQL instance, Shared Memory and database identity using private configuration. Stop on drift, an unexpected pending set or a remote target.
+2. Stop only this checkout's Development processes. Recheck its listeners and active database writers immediately before maintenance. Take a fresh timestamped full `COPY_ONLY` backup outside Git with SQL backup checksums and verify it with `RESTORE VERIFYONLY WITH CHECKSUM`. Record the recovery path, expected changes and pre-change counts or digests before running maintenance.
+3. From the source root run `npm.cmd run db:setup` with `NODE_ENV=development` and the verified local connection. The runner applies its entire pending sequence. If already current, verify the actual schema and report any runner invocation as a no-op. Inspect history and schema after a failed attempt before considering a retry.
+4. Check keys, constraints, indexes, preserved data and zero pending migrations. Run targeted and full regression, then start Development with `npm.cmd run dev` and check live health. If a required migration remains unapplied, report **BLOCKED - MIGRATION NOT APPLIED** and the actual reason. Keep startup read-only and mutation tests isolated.
+5. Production requires separate deployment authorization, verified Release compatibility, an environment-specific verified backup and manual migration verification before activating the application version. Historical Development permissions do not authorize Production.
+
+[Development and production migration runbook](docs/DATABASE-MIGRATION-FA.md#development-migrations)
+
 ## 6. Security and privacy
 
 - Do not commit credentials, API keys, real connection strings, private files, user data, `.env.local`, or machine-specific secrets.
@@ -345,7 +357,7 @@ These are **approved requirements for upcoming implementation**, not claims that
 
 - Investigate the existing `pages is invalid` calculator bug at the frontend/backend contract and parsing boundary; fix the actual cause without disabling authoritative backend validation or changing commercial price rules. Test integer bounds and Persian/Arabic numeral normalization as applicable.
 
-- Customer pricing summaries show aggregate estimated/final prices only. Preserve quote API calculations, tariffs and historical `priceBreakdown` data; administrator order details may render the stored breakdown without recalculating it.
+- Customer order summaries show aggregate estimated/final prices. The authenticated calculator also shows the print, cover/binding, finishing and one-time setup components. Preserve quote API calculations, tariffs and historical `priceBreakdown` data; administrator order details may render the stored breakdown without recalculating it.
 
 - Keep authenticated `/account/orders` discoverable and paginated. Remove `/track` from the public main navigation; retain its route for authenticated owners following historical links. Customer order details enforce ownership and reuse tracking/history behavior, adding only the owner's saved specification and safe file metadata (never storage keys, admin notes or pricing breakdown). The existing `GET /api/customer/orders` array contract remains available without `page`; paginated requests use `page`/`pageSize`. Do not add schema changes or operational test records for these views.
 
@@ -420,7 +432,7 @@ These approved requirements supersede older support/consultation and request-inf
 ### Business and presentation update (2026-10-30)
 
 - Use `frontend/lib/money.ts` (`formatToman`) for monetary displays: grouped amounts, تومان and bidi-isolated numeric text. Keep `money` for nonmonetary counts. Never convert persisted toman amounts or recalculate historical order snapshots merely to format them.
-- All 15 finishing tariffs are global per-copy rates with the existing per-copy ceiling and quantity discount. The 11 printing rates are versioned by active catalog cut. An unconfigured cut cannot produce an estimate. Save the effective version and rates with each new request. Edits are explicit admin saves only; no default reset or operational migration.
+- All 15 finishing tariffs are global per-copy rates with the existing per-copy ceiling and quantity discount. The 11 printing rates are versioned by active catalog cut. Active fixed cuts start with 11 independent proposed amounts derived from the historical Chap Giti basis and catalog measurements. New estimates and order submissions require an administrator-approved revision. Approval appends a revision, even for unchanged amounts. Custom cuts require explicit base rates and validated dimensions. Keep historical global printing rates in storage only. [Tariff policy](docs/CUT-TARIFF-POLICY-FA.md). Save the effective version and rates with each new request. Business rate changes require explicit admin saves. Schema activation follows section 5 and preserves existing prices.
 - Finishing eligibility mirrors Domain rules: a cover and binding are required; matte-marked options require matte coating; hard-marked options require hardcover binding. Plastic covers cannot use stale matte state to activate matte-only finishing. Explain disabled options and report selections removed after dependency changes. Do not infer unsupported commercial combinations from a reference website.
 - V2 services use the Settings.services catalog, stable IDs, editable content, publication state and ordered public pages. Retain previous slugs as aliases with canonical redirects; the only service-specific primary action is consultation through authenticated support tickets. Marketing service slugs do not replace authoritative pricing/order identifiers.
 - Remove only the MelliPayamak settings tab/panel. Keep private configuration, real Console OTP, recovery, notification delivery and SMS logs intact.

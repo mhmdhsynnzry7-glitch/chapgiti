@@ -50,6 +50,10 @@ internal static class BusinessScenarios
         var history=host.Data.Orders[orderId]["spec"]!.ToString();
         var settings=await Request("GET","admin/settings");
         var originalRates=settings["rates"]!.DeepClone();
+        check(!CutTariff.Keys.Any(originalRates.AsObject().ContainsKey),"settings expose only cut-independent finishing rates");
+        var selectedCut=host.Data.CatalogItems.Values.Single(c=>c.Kind=="bookSizes" && c.Code=="raghi");
+        var scoped=(await Request("GET","admin/print-tariffs/"+selectedCut.Id))["rates"]!.DeepClone().AsObject();
+        foreach (var entry in originalRates.AsObject()) scoped[entry.Key]=entry.Value?.DeepClone();
         settings["rates"]!["goldFoil"]=17000;
         await Request("PUT","admin/settings",settings);
         var updatedQuote=await Request("POST","quote",spec);
@@ -97,7 +101,7 @@ internal static class BusinessScenarios
         foreach(var service in host.Data.Root["options"]!["finishingServices"]!.AsObject()){
             spec["details"]!["extras"]=new JsonArray(service.Key);
             var validated=pricing.Validate(spec);
-            check(Input.Numeric(pricing.Quote(validated,originalRates)["extras"])==Input.Numeric(originalRates[service.Key]),"finishing service available and priced per book: "+service.Key);
+            check(Input.Numeric(pricing.Quote(validated,scoped)["extras"])==Input.Numeric(originalRates[service.Key]),"finishing service available and priced per book: "+service.Key);
             foreach(var condition in new[]{"none","printOnly","plastic","soft","gloss"}){
                 var incompatible=spec.DeepClone().AsObject();var d=incompatible["details"]!;
                 var rejected=condition is "none" or "printOnly" || (condition is "plastic" or "gloss" && service.Value!["matte"]!.GetValue<bool>()) || (condition=="soft"&&service.Value!["hard"]!.GetValue<bool>());

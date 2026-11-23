@@ -196,7 +196,7 @@ export async function finalUatChecks({ page, base, check }) {
   await page.getByRole("button", { name: "محاسبه هزینه", exact: true }).click();
   await page.locator(".price-summary").waitFor();
   check(
-    (await page.locator(".price-summary dt").count()) === 8 && await page.getByText("برآورد کل",{exact:true}).isVisible() && await page.getByText("مبلغ صرفه‌جویی").count() === 0,
+    (await page.locator(".price-summary dt").allTextContents()).includes("آماده‌سازی کل سفارش") && await page.getByText("چاپ متن هر جلد", {exact:true}).isVisible() && await page.getByText("جلد و صحافی هر جلد", {exact:true}).isVisible() && await page.getByText("برآورد کل",{exact:true}).isVisible() && await page.getByText("مبلغ صرفه‌جویی").count() === 0,
     "calculator summarizes the selected cut, quantity, finishing, discount and estimate",
   );
   await page.screenshot({ path: folder + "/calculator-mobile.png" });

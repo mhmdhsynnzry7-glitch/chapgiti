@@ -14,7 +14,7 @@ internal static class EfActivationAcceptance
     private static readonly string Artifacts = Path.Combine(".qa", "ef-activation-" + Guid.NewGuid().ToString("N"));
     private static readonly string[] ExpectedEf = [
         "20261117090230_Legacy009Baseline", "20261117092337_CatalogAndMagazine",
-        "20261118113729_TicketMessageReadState", "20261122130922_CutTariffVersions"
+        "20261118113729_TicketMessageReadState", "20261122130922_CutTariffVersions", "20261123062444_ProposedCutTariffs"
     ];
     private static readonly string[] LegacyTables = [
         "Customer_Registrations", "Customer_Accounts", "Admin_Users", "Admin_Usernames",
@@ -159,19 +159,19 @@ internal static class EfActivationAcceptance
                     {
                         var bootstrap = await checks.Request(guest, "GET", "public/bootstrap");
                         var legacySettings = await checks.Request(admin, "GET", "admin/settings");
-                        checks.Check(bootstrap["rates"] == null && legacySettings["rates"]!["setup"]!.GetValue<int>() == 87654,
-                            "unassigned historical rates survive adoption for administrator review and remain private");
+                        checks.Check(bootstrap["rates"] == null && legacySettings["rates"]!["setup"] == null && (await database.Read("SELECT JSON_VALUE([value],'$.setup') amount FROM dbo.Settings WHERE [key]='rates'"))!.Str("amount") == "87654",
+                            "historical reference rates stay in storage and are absent from current rate responses");
                     }
                     var cutPath = "admin/print-tariffs/" + option["id"];
                     var unset = await checks.Request(admin, "GET", cutPath);
-                    checks.Check(unset["version"]!.GetValue<int>() == 0 && unset["rates"] == null,
-                        "fresh and upgraded catalogs do not inherit fabricated per-cut prices");
+                    checks.Check(unset["version"]!.GetValue<int>() == 1 && unset["isProposed"]!.GetValue<bool>() && unset["rates"]!.AsObject().Count == 11,
+                        "fresh and upgraded fixed cuts receive complete unapproved proposals");
                     var sampleRates = ChapGiti.Domain.Printing.CutTariff.Keys.ToDictionary(key => key, _ => 10);
-                    await checks.Request(admin, "PUT", cutPath, new { version = 0, rates = sampleRates });
+                    await checks.Request(admin, "PUT", cutPath, new { version = 1, approveProposal = true, rates = sampleRates });
                     var stored = await checks.Request(admin, "GET", cutPath);
                     var otherCut = await checks.Request(admin, "GET", "admin/print-tariffs/" + nextDefault["id"]);
-                    checks.Check(stored["version"]!.GetValue<int>() == 1 && stored["rates"]!["setup"]!.GetValue<int>() == 10 &&
-                        otherCut["version"]!.GetValue<int>() == 0, "an explicit test rate revision persists only for the selected cut");
+                    checks.Check(stored["version"]!.GetValue<int>() == 2 && stored["rates"]!["setup"]!.GetValue<int>() == 10 &&
+                        otherCut["version"]!.GetValue<int>() == 1 && otherCut["isProposed"]!.GetValue<bool>(), "an explicit test rate revision persists only for the selected cut");
                     await checks.Request(admin, "PUT", cutPath, new { version = 0, rates = sampleRates }, 409);
                     var invalid = option.DeepClone().AsObject();
                     invalid["code"] = "activation-unsupported";

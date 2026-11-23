@@ -43,4 +43,10 @@ check(/DropTable\(\s*name: "Cut_Tariff_Versions"/.test(down) && /DropIndex\(\s*n
   'rolling back the migration affects only its new tariff history and support index');
 check(readFileSync(efMigrations + tariffId + '.Designer.cs','utf8').includes('[Migration("' + tariffId + '")]') && readFileSync(efMigrations + 'ChapGitiDbContextModelSnapshot.cs','utf8').includes('IX_TicketMessages_Unread'),
   'EF migration identity, designer and snapshot describe the same change');
+const proposalId = '20261123062444_ProposedCutTariffs';
+const [seed, rollback] = readFileSync(efMigrations + proposalId + '.cs', 'utf8').split('protected override void Down');
+check(seed.includes('name: "is_proposed"') && seed.includes('defaultValue: false'), 'previous administrator versions retain their approved status');
+check(seed.includes("d.isCustom = 0") && seed.includes("o.active = 1") && seed.includes("NOT EXISTS (SELECT 1 FROM dbo.Cut_Tariff_Versions"), 'only missing fixed-cut histories receive a proposal');
+check(!/\b(?:DROP|TRUNCATE|DELETE|UPDATE|MERGE)\b/i.test(seed), 'proposal activation preserves prior orders, settings and revisions');
+check(rollback.includes('WHERE is_proposed = 1') && rollback.indexOf('THROW') < rollback.indexOf('DropColumn'), 'downgrade cannot accidentally activate proposed prices');
 console.log(`${checks} migration/source contract checks passed; this source-only suite does not access SQL Server. Run the separately authorized isolated SQL acceptance for engine verification.`);

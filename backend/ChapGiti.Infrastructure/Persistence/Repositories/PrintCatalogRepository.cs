@@ -54,7 +54,6 @@ internal sealed class PrintCatalogRepository(SqlStore db) : IPrintCatalogReposit
         await db.Context.Set<PrintCatalogOption>().Where(o => o.Id == id && o.Version == version && !o.IsDefault).ExecuteDeleteAsync() == 1;
 
     public async Task<bool> IsReferenced(PrintCatalogItem item) =>
-        (item.Kind == "bookSizes" && await new CutTariffRepository(db).Available() && await db.Context.Set<CutTariffVersion>().AnyAsync(r => r.CutId == item.Id)) ||
         await db.One("""
             SELECT TOP (1) 1 used FROM dbo.Orders o
             WHERE EXISTS (SELECT 1 FROM OPENJSON(o.spec,'$.catalogSnapshot.options')

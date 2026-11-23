@@ -2,7 +2,8 @@ using ChapGiti.Application.Catalog;
 
 namespace ChapGiti.Application.Features;
 
-public sealed class PrintCatalogService(IPrintCatalogRepository repository, IUnitOfWork unitOfWork, SessionService sessions)
+public sealed class PrintCatalogService(IPrintCatalogRepository repository, IUnitOfWork unitOfWork, SessionService sessions,
+    ICutTariffRepository tariffs, ContentService content, IContentDefaults defaults)
 {
     private IReadOnlyList<PrintCatalogItem>? active;
     public Task<bool> Available() => repository.Available();
@@ -81,8 +82,10 @@ public sealed class PrintCatalogService(IPrintCatalogRepository repository, IUni
         {
             await repository.LockKind(candidate.Kind);
             var item = await repository.Lock(id) ?? throw new UseCaseException(ErrorKind.NotFound, "گزینه پیدا نشد.");
-            if (item.IsDefault || await repository.IsReferenced(item))
+            var tariff = item.Kind == "bookSizes" && await tariffs.Available() ? await tariffs.Latest(id) : null;
+            if (item.IsDefault || tariff is { IsProposed: false } || await repository.IsReferenced(item))
                 throw new UseCaseException(ErrorKind.Conflict, "گزینهٔ پیش‌فرض یا استفاده‌شده قابل حذف نیست. گزینهٔ جایگزین را پیش‌فرض و این گزینه را غیرفعال کنید.", code:"CATALOG_DELETE_PROTECTED");
+            if (tariff is { IsProposed: true, Version: 1 }) await tariffs.DiscardInitialProposal(id);
             if (!await repository.Delete(id, version)) throw new UseCaseException(ErrorKind.Conflict, "نسخهٔ گزینه تغییر کرده است.", code:"CATALOG_VERSION_CONFLICT");
             await sessions.Audit(admin.Str("email"), "حذف گزینه چاپ " + item.Code);
             return UseCaseResult.Json(new {ok=true});
@@ -123,6 +126,14 @@ public sealed class PrintCatalogService(IPrintCatalogRepository repository, IUni
             var item = new PrintCatalogItem(itemId, kind, code, label, rule, metadata, (int)order, enabled, isDefault, (version ?? 0) + 1, old?.CreatedAt ?? now, now);
             if (!await repository.Save(item, version))
                 throw new UseCaseException(ErrorKind.Conflict, "گزینه هم‌زمان تغییر کرده است.", code: "CATALOG_VERSION_CONFLICT");
+            if (kind == "bookSizes" && enabled && !metadata["isCustom"]!.GetValue<bool>() && await tariffs.Latest(itemId) == null)
+            {
+                var basis = (JsonObject)defaults.Root["rates"]!.DeepClone();
+                if (await content.StoredRates() is { } stored)
+                    foreach (var key in CutTariff.Keys.Where(stored.ContainsKey)) basis[key] = stored[key]?.DeepClone();
+                var proposal = CutTariff.Propose(metadata, basis);
+                await tariffs.Append(new(itemId, 1, now, proposal, IsProposed: true));
+            }
             await sessions.Audit(admin.Str("email"), "ویرایش تنظیمات چاپ: " + kind + "/" + code);
             return true;
         });

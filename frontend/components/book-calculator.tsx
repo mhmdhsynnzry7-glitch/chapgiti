@@ -18,7 +18,7 @@ import type { CustomerProfile } from "@/lib/customer";
 import { validatePrintSpec } from "@/lib/print-spec";
 import { usePrintCatalog, CatalogStatus } from "./print-catalog-provider";
 import { catalogDefaults, attachCatalogIds } from "@/lib/print-catalog";
-type Calculation = { extras: number; total: number; unit: number; subtotal: number; discountAmount: number; discountPercent: number; unitBeforeDiscount: number; spine: number };
+type Calculation = { print: number; cover: number; binding: number; setup: number; extras: number; total: number; unit: number; subtotal: number; discountAmount: number; discountPercent: number; unitBeforeDiscount: number; spine: number };
 type CalculatorProps = {
   customer: CustomerProfile | null;
 };
@@ -166,6 +166,9 @@ function CalculatorFields({ customer }: CalculatorProps) {
                 <dl className="price-summary">
                   <div><dt>قطع کتاب</dt><dd>{options.bookSizes[spec.size]?.label}</dd></div>
                   <div><dt>تیراژ</dt><dd>{money(spec.quantity)} جلد</dd></div>
+                  <div><dt>چاپ متن هر جلد</dt><dd>{formatToman(result.print)}</dd></div>
+                  <div><dt>جلد و صحافی هر جلد</dt><dd>{formatToman(result.cover + result.binding)}</dd></div>
+                  <div><dt>آماده‌سازی کل سفارش</dt><dd>{formatToman(result.setup)}</dd></div>
                   <div><dt>خدمات تکمیلی هر جلد</dt><dd>{formatToman(result.extras)}{spec.details?.extras.length ? <small className="estimate-extras">{spec.details.extras.map(key=>options.finishingServices[key]?.label).filter(Boolean).join("، ")}</small> : null}</dd></div>
                   <div><dt>قیمت هر جلد قبل از تخفیف</dt><dd>{formatToman(result.unitBeforeDiscount)}</dd></div>
                   <div><dt>جمع مبلغ مشمول تخفیف</dt><dd>{formatToman(result.subtotal)}</dd></div>

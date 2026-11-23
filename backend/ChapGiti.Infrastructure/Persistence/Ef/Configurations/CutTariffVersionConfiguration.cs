@@ -14,6 +14,7 @@ internal sealed class CutTariffVersionConfiguration : IEntityTypeConfiguration<C
         });
         e.HasKey(r => new { r.CutId, r.Version });
         e.Property(r => r.CutId).HasColumnName("cut_id").HasMaxLength(36).IsUnicode(false);
+        e.Property(r => r.IsProposed).HasColumnName("is_proposed").HasDefaultValue(false);
         e.Property(r => r.Version).HasColumnName("version").ValueGeneratedNever();
         e.Property(r => r.UpdatedAt).HasColumnName("updated_at").HasPrecision(3);
         e.Property(r => r.Rates).HasColumnName("rates").HasColumnType("nvarchar(max)");

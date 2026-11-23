@@ -54,14 +54,11 @@ export async function paginationChecks({page,base,check,control}) {
   check(true,'focus refresh preserves a still-valid current page');
   // Simulate a concurrent reduction in results without changing stored records.
   let reduced=false;
-  const shrink=async route=>{
-    if(!reduced&&new URL(route.request().url()).searchParams.get('page')==='2') {
-      reduced=true;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({orders:[],total:1,page:2})});
-    } else await route.continue();
-  };
-  await page.route('**/api/admin/orders?*',shrink);
+  await page.route(url => url.origin === new URL(base).origin && url.pathname === '/api/admin/orders' && url.searchParams.get('page') === '2', async route => {
+    reduced=true;
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({orders:[],total:1,page:2})});
+  }, {times:1});
   await page.getByRole('button',{name:'تازه‌سازی سفارش‌ها',exact:true}).click();await waitPage(1);
-  await page.unroute('**/api/admin/orders?*',shrink);
   check(reduced,'a shrinking result set recovers to a valid page without trapping the user');
   await pager().getByRole('button',{name:'صفحه بعد',exact:true}).focus();await page.keyboard.press('Enter');await waitPage(2);
   check(true,'shared pagination supports keyboard activation');
