@@ -84,6 +84,18 @@ internal static class RequestQuoteScenarios
         var termsId = Guid.NewGuid().ToString();
         await Req(admin,"POST","admin/orders/"+id+"/delivery-terms",new{idempotencyKey=termsId,expectedVersion=Version(id),delivery="Pickup",scope="Printing"});
         await Req(customer,"POST","customer/orders/"+id+"/delivery-terms/accept",new{idempotencyKey=Guid.NewGuid().ToString(),expectedVersion=Version(id),termsId});
+        var acceptedVersion = Version(id);
+        var revisePath="admin/orders/"+id+"/delivery-terms";
+        await Req(admin,"POST",revisePath,new{idempotencyKey=Guid.NewGuid(),expectedVersion=acceptedVersion,delivery="Changed"},409);
+        await Req(admin,"POST",revisePath,new{idempotencyKey=Guid.NewGuid(),revisionOf=termsId,expectedVersion=acceptedVersion,delivery="Pickup",scope="Printing"},409);
+        var replacement=Guid.NewGuid().ToString();
+        var revision=new{idempotencyKey=replacement,revisionOf=termsId,expectedVersion=acceptedVersion,delivery="New collection point",scope="Printing"};
+        await Req(admin,"POST",revisePath,revision);await Req(admin,"POST",revisePath,revision);
+        await Req(customer,"POST","customer/orders/"+id+"/delivery-terms/accept",new{idempotencyKey=Guid.NewGuid(),expectedVersion=Version(id),termsId},409);
+        await Req(admin,"POST","admin/orders/"+id+"/start-printing",new{idempotencyKey=Guid.NewGuid(),expectedVersion=Version(id)},409);
+        var conditions=JsonNode.Parse(data.Orders[id].Str("spec"))!["deliveryConditions"]!.AsArray();
+        check(conditions.Count==2 && conditions[0]!["acceptedAt"]!=null && conditions[0]!["supersededAt"]!=null && conditions[1]!["acceptedAt"]==null,"explicit terms revision retains signed history and requires fresh acceptance");
+        await Req(customer,"POST","customer/orders/"+id+"/delivery-terms/accept",new{idempotencyKey=Guid.NewGuid(),expectedVersion=Version(id),termsId=replacement});
         var start=new{idempotencyKey=Guid.NewGuid().ToString(),expectedVersion=Version(id)};await Req(admin,"POST","admin/orders/"+id+"/start-printing",start);await Req(admin,"POST","admin/orders/"+id+"/start-printing",start);
         check(data.Orders[id].Str("status")=="printing","printing starts only on the explicit administrator command after approval");
         foreach(var status in new[]{"binding","ready","completed"})await Req(admin,"PATCH","admin/orders/"+id,new{idempotencyKey=Guid.NewGuid().ToString(),version=Version(id),status});

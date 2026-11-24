@@ -99,6 +99,7 @@ try {
     await checks.Request(customerClient,"POST","tickets",new{idempotencyKey=Guid.NewGuid().ToString(),subject="General acceptance",message="General request after migration."},201);
     await checks.Request(customerClient,"POST","tickets/"+oldTicket+"/messages",new{idempotencyKey=Guid.NewGuid().ToString(),message="Historical ticket still works"},201);
     await checks.Request(adminClient,"POST","admin/tickets/"+linked+"/messages",new{idempotencyKey=Guid.NewGuid().ToString(),message="Support SQL response"},201);
+    await checks.Request(adminClient,"PATCH","admin/tickets/"+linked,new{status="awaiting_customer"});
     var waiting=await checks.Request(adminClient,"GET","admin/tickets?page=1&pageSize=1&status=awaiting_customer&q=Linked");
     checks.Check(waiting["total"]!.GetValue<int>()==1&&waiting["items"]![0]!["last_message"]!.ToString()=="Support SQL response","SQL status/search/pagination and last-message preview agree");
     await checks.Request(customerClient,"POST","tickets/"+linked+"/messages",new{idempotencyKey=Guid.NewGuid().ToString(),message="Customer SQL response"},201);

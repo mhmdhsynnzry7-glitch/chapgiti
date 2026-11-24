@@ -1951,6 +1951,60 @@ namespace ChapGiti.Infrastructure.Persistence.Ef.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ChapGiti.Infrastructure.Persistence.Ef.Models.TicketAttachment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(36)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Digest")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("digest");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(36)")
+                        .HasColumnName("message_id");
+
+                    b.Property<string>("Mime")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(32)")
+                        .HasColumnName("mime");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int")
+                        .HasColumnName("position");
+
+                    b.Property<int>("Size")
+                        .HasColumnType("int")
+                        .HasColumnName("size");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId", "Position")
+                        .IsUnique();
+
+                    b.ToTable("Ticket_Attachments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_TicketAttachment_Size", "[size] > 0 AND [position] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("ChapGiti.Infrastructure.Persistence.Ef.Models.TicketMessage", b =>
                 {
                     b.Property<string>("Id")
@@ -2268,6 +2322,15 @@ namespace ChapGiti.Infrastructure.Persistence.Ef.Migrations
                         .WithMany()
                         .HasForeignKey("OrderId")
                         .HasConstraintName("FK_Tickets_Order");
+                });
+
+            modelBuilder.Entity("ChapGiti.Infrastructure.Persistence.Ef.Models.TicketAttachment", b =>
+                {
+                    b.HasOne("ChapGiti.Infrastructure.Persistence.Ef.Models.TicketMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ChapGiti.Infrastructure.Persistence.Ef.Models.TicketMessage", b =>

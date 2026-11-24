@@ -88,6 +88,10 @@ try {
   page.setDefaultTimeout(12000);
   page.on("pageerror", (error) => browserErrors.push(error.message));
   await page.goto(base + "/calculator");
+  await page.locator("input[name=phone]").fill("09100000001");
+  await page.locator("input[name=password]").fill("Isolated.Sql@2026");
+  await page.locator("form").getByRole("button",{name:"ورود",exact:true}).click();
+  await page.waitForURL(url=>url.pathname==="/calculator");
   const selector = page.getByLabel("قطع کتاب", { exact: true });
   await selector.waitFor();
   check(

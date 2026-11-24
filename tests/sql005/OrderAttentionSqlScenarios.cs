@@ -74,16 +74,16 @@ internal static class OrderAttentionSqlScenarios
         var historical=await api.Fixtures.Ticket(order,"Readonly synthetic archive");
         var before=await OrderWorkflowSqlScenarios.JsonSnapshot(api.Database,"SELECT (SELECT COUNT(*) FROM dbo.Tickets) tickets,(SELECT COUNT(*) FROM dbo.Ticket_Messages) messages,(SELECT COUNT(*) FROM dbo.Notifications) notices FOR JSON PATH");
         foreach(var path in new[]{"tickets","contact"})foreach(var payload in new[]{new{consultation=false,orderId=order},new{consultation=true,orderId=""}})
-            await api.Request(api.Customer,"POST",path,payload,410,"TICKET_FEATURE_RETIRED");
-        await api.Request(api.Customer,"POST","tickets/"+historical+"/messages",new{message="No write"},410,"TICKET_FEATURE_RETIRED");
-        await api.Request(api.Administrator,"POST","admin/tickets/"+historical+"/messages",new{message="No write"},410,"TICKET_FEATURE_RETIRED");
-        await api.Request(api.Administrator,"PATCH","admin/tickets/"+historical,new{status="closed"},410,"TICKET_FEATURE_RETIRED");
+            await api.Request(api.Customer,"POST",path,payload,503,"SUPPORT_SCHEMA_PENDING");
+        await api.Request(api.Customer,"POST","tickets/"+historical+"/messages",new{message="No write"},503,"SUPPORT_SCHEMA_PENDING");
+        await api.Request(api.Administrator,"POST","admin/tickets/"+historical+"/messages",new{message="No write"},503,"SUPPORT_SCHEMA_PENDING");
+        await api.Request(api.Administrator,"PATCH","admin/tickets/"+historical,new{status="closed"},503,"SUPPORT_SCHEMA_PENDING");
         foreach(var scope in new[]{"customer","admin"})
-            await api.Request(scope=="customer"?api.Customer:api.Administrator,"POST","realtime/"+scope+"/support/negotiate?negotiateVersion=1",new{},410,"TICKET_FEATURE_RETIRED");
+            await api.Request(scope=="customer"?api.Customer:api.Administrator,"POST","realtime/"+scope+"/support/negotiate?negotiateVersion=1",new{},200);
         await api.Request(api.Guest,"POST","tickets",new{},401);await api.Request(api.Customer,"POST","admin/tickets/"+historical+"/messages",new{},401);
         await api.Request(api.Other,"GET","tickets/"+historical,expected:404);
         var archive=await api.Request(api.Customer,"GET","tickets/"+historical);var admin=await api.Request(api.Administrator,"GET","admin/tickets/"+historical);
         api.Checks.Check(archive["readOnly"]!.GetValue<bool>()&&admin["readOnly"]!.GetValue<bool>()&&archive["messages"]!.AsArray().Count==2,"SQL historical ticket messages remain authorized and read-only for both roles");
-        api.Checks.Check(await OrderWorkflowSqlScenarios.JsonSnapshot(api.Database,"SELECT (SELECT COUNT(*) FROM dbo.Tickets) tickets,(SELECT COUNT(*) FROM dbo.Ticket_Messages) messages,(SELECT COUNT(*) FROM dbo.Notifications) notices FOR JSON PATH")==before,"retired SQL ticket REST/realtime paths do not write messages, statuses or notifications");
+        api.Checks.Check(await OrderWorkflowSqlScenarios.JsonSnapshot(api.Database,"SELECT (SELECT COUNT(*) FROM dbo.Tickets) tickets,(SELECT COUNT(*) FROM dbo.Ticket_Messages) messages,(SELECT COUNT(*) FROM dbo.Notifications) notices FOR JSON PATH")==before,"SQL009 historical fixture requires the later read-state migration for support writes; negotiation has no SQL side effects");
     }
 }

@@ -7,7 +7,7 @@ import { checkSealedFrontend, frameworkManifests } from "./initialize-frontend.m
 
 const efRoot = "backend/ChapGiti.Infrastructure/Persistence/Ef";
 export const knownEf = ["20261117090230_Legacy009Baseline", "20261117092337_CatalogAndMagazine", "20261118113729_TicketMessageReadState",
-  "20261122130922_CutTariffVersions", "20261123062444_ProposedCutTariffs"];
+  "20261122130922_CutTariffVersions", "20261123062444_ProposedCutTariffs", "20261124131104_TicketMessageAttachments"];
 export const embedded = ["InitialPrintCatalog.json", "Legacy009Baseline.sql"];
 export const scripts = ["dotnet-runtime.mjs", "start-node.mjs", "db-setup.mjs", "admin-setup.mjs", "check-deploy.mjs", "deployment-context.mjs", "verify-release.mjs", "release-files.mjs", "release-contract.mjs", "initialize-frontend.mjs"];
 export const iis = ["install-service.ps1", "service-config.ps1", "GitiNode.xml.template", "configure-iis.ps1", "proxy-config.ps1", "configure-otp.ps1", "web.config"];

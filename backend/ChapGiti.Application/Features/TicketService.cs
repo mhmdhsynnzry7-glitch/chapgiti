@@ -2,6 +2,8 @@ namespace ChapGiti.Application.Features;
 
 public sealed class TicketService(
     ITicketRepository repository,
+    IPrivateFileStore storage,
+    TicketAttachmentPolicy filePolicy,
     IOrderRepository orders,
     IUnitOfWork unitOfWork,
     SessionService sessions,
@@ -111,12 +113,17 @@ public sealed class TicketService(
         ticket.Remove(admin ? "unread_customer" : "unread_admin");
         var linkedFiles=ticket.GetValueOrDefault("order_id") is string orderId && ticket.GetValueOrDefault("order_code") != null
             ? await orders.CustomerOrderFiles(orderId,ticket.Str("customer_id")) : [];
+        var messages = await repository.Messages(idValue);
+        var attachments = (await repository.TicketFiles(idValue)).ToLookup(f => f.MessageId);
+        foreach (var message in messages)
+            message["attachments"] = attachments[message.Str("id")].Select(f => new { f.Id, f.Name, f.Mime, f.Size }).ToArray();
         return UseCaseResult.Json(new
         {
+            attachmentLimits = new { count = filePolicy.MaxFiles, bytes = filePolicy.MaxBytes },
             ticket,
             orderFiles = linkedFiles,
             readOnly = !await repository.SupportsMessageReads(),
-            messages = await repository.Messages(idValue)
+            messages
         });
     }
 
@@ -139,37 +146,69 @@ public sealed class TicketService(
         });
     }
 
-    public async Task<UseCaseResult> Reply(string idValue, JsonObject body, bool admin = false, Dictionary<string, object?>? user = null)
+    public async Task<UseCaseResult> Download(string id, string fileId, bool admin)
+    {
+        await FindTicket(id, admin);
+        var file = (await repository.TicketFiles(id, fileId: fileId)).SingleOrDefault()
+            ?? throw new UseCaseException(ErrorKind.NotFound, "پیوست پیدا نشد.");
+        return UseCaseResult.File(await storage.ReadTicketFile(file.Id), file.Mime, file.Name, sandbox:true);
+    }
+
+    public async Task AuthorizeReply(string id, bool admin) => await FindTicket(id, admin);
+
+    public async Task<UseCaseResult> Reply(string idValue, JsonObject body, bool admin = false, Dictionary<string, object?>? user = null, IReadOnlyList<IUploadContent>? uploads = null)
     {
         await FindTicket(idValue, admin);
         await RequireMessaging();
         if (!admin)
             await sessions.Limit("ticket-reply", 30);
-        var message = Input.Text(body, "message", 2, 5000);
+        var prepared = await filePolicy.Prepare(uploads ?? []);
+        if (prepared.Count > 0 && !await repository.SupportsAttachments())
+            throw new UseCaseException(ErrorKind.Unavailable,"پیوست پس از به‌روزرسانی پشتیبانی فعال می‌شود.", code:"SUPPORT_SCHEMA_PENDING");
+        var message = Input.Text(body, "message", prepared.Count > 0 ? 0 : 2, 5000);
         var id = Input.Id(body);
         var actor = admin ? "admin" : "customer";
-        var duplicate = await unitOfWork.Transaction(async () =>
+        var written = new List<string>();
+        bool duplicate;
+        try
         {
-            var current = await FindTicket(idValue, admin, true);
-            var old = await repository.LockExistingMessage(id);
-            if (old != null)
+            duplicate = await unitOfWork.Transaction(async () =>
             {
-                if (old.Str("ticket_id") != idValue || old.Str("actor") != actor || old.Str("message") != message)
-                    throw new UseCaseException(ErrorKind.Conflict, "شناسه پیام قبلاً استفاده شده است.");
-                return true;
-            }
-            if (current.Str("status") == "closed")
-                throw new UseCaseException(ErrorKind.Conflict, admin ? "ابتدا تیکت را دوباره باز کنید." : "این تیکت بسته شده است؛ تیکت جدید ثبت کنید.");
-            var now = NextActivityTime(current.Str("updated_at"));
-            await repository.InsertMessage(id, idValue, actor, message, now);
-            updates.Enqueue(ChapGiti.Application.Realtime.RealtimeUpdate.Ticket(idValue, id));
-            await repository.UpdateAfterReply(TicketWorkflow.AfterReply(admin), now, idValue);
-            await notifications.Publish(new(ChapGiti.Domain.Notifications.NotificationEvent.TicketMessage, id, idValue,
-                current.Str("customer_id"), ToAdministrators: !admin));
-            return false;
-        });
-        if (admin && !duplicate)
-            await sessions.Audit(user!.Str("email"), "پاسخ به تیکت " + idValue);
+                var current = await FindTicket(idValue, admin, true);
+                var old = await repository.LockExistingMessage(id);
+                if (old != null)
+                {
+                    if (old.Str("ticket_id") != idValue || old.Str("actor") != actor || old.Str("message") != message)
+                        throw new UseCaseException(ErrorKind.Conflict, "شناسه پیام قبلاً استفاده شده است.");
+                    var prior = (await repository.TicketFiles(idValue, messageId: id)).Select(f=>(f.Name,f.Digest));
+                    if (!prior.SequenceEqual(prepared.Select(f=>(f.Name,f.Digest))))
+                        throw new UseCaseException(ErrorKind.Conflict,"پیوست‌های این پیام تغییر کرده‌اند.",code:"TICKET_MESSAGE_CONFLICT");
+                    return true;
+                }
+                if (current.Str("status") == "closed")
+                    throw new UseCaseException(ErrorKind.Conflict, admin ? "ابتدا تیکت را دوباره باز کنید." : "این تیکت بسته شده است؛ تیکت جدید ثبت کنید.");
+                var now = NextActivityTime(current.Str("updated_at"));
+                await repository.InsertMessage(id, idValue, actor, message, now);
+                foreach (var (upload, position) in prepared.Select((f,i)=>(f,i)))
+                {
+                    var fileId = Input.NewId();
+                    await storage.WriteTicketFile(fileId, upload.Bytes);
+                    written.Add(fileId);
+                    await repository.AddFile(new(fileId,id,upload.Name,upload.Mime,upload.Bytes.Length,position,upload.Digest));
+                }
+                if (admin) await sessions.Audit(user!.Str("email"), "پاسخ به تیکت " + idValue);
+                updates.Enqueue(ChapGiti.Application.Realtime.RealtimeUpdate.Ticket(idValue, id));
+                await repository.UpdateAfterReply(TicketWorkflow.AfterReply(admin, current.Str("status")), now, idValue);
+                await notifications.Publish(new(ChapGiti.Domain.Notifications.NotificationEvent.TicketMessage, id, idValue,
+                    current.Str("customer_id"), ToAdministrators: !admin));
+                return false;
+            });
+        }
+        catch
+        {
+            foreach (var key in written) storage.DeleteTicketFile(key);
+            throw;
+        }
         return UseCaseResult.Json(new
         {
             ok = true

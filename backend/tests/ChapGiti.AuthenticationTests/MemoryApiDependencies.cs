@@ -14,6 +14,7 @@ internal sealed class MemoryApiData : IContentDefaults, IContentRepository, IPri
     public bool FailNextOrderList;
     public int SimulatedTrackingCollisions;
     public int OrderListDelayMs;
+    public readonly Dictionary<string, TicketFile> Attachments=[];
     public readonly Dictionary<string,byte[]> Assets=[];
     public readonly Dictionary<string,Dictionary<string,object?>> AssetMetadata=[];
     public readonly Dictionary<string,Dictionary<string,object?>> Orders=[];
@@ -44,10 +45,10 @@ internal sealed class MemoryApiData : IContentDefaults, IContentRepository, IPri
         var copies=tables.Select(table=>table.ToDictionary(pair=>pair.Key,pair=>pair.Value.ToDictionary())).ToArray();
         var events=Events.Select(row=>row.ToDictionary()).ToList();
         var settings=Settings.ToDictionary();
-        var notifications=NotificationRows.ToDictionary();
+        var notifications=NotificationRows.ToDictionary();var attachments=Attachments.ToDictionary();
         var corrections=CorrectionRows.ToDictionary();var views=OrderViews.ToDictionary();
         var catalog=CatalogItems.ToDictionary();var magazine=MagazineArticles.ToDictionary();var aliases=MagazineAliases.ToDictionary();
-        return ()=>{for(var i=0;i<tables.Length;i++){tables[i].Clear();foreach(var pair in copies[i])tables[i][pair.Key]=pair.Value;}Events.Clear();Events.AddRange(events);Settings.Clear();foreach(var pair in settings)Settings[pair.Key]=pair.Value;NotificationRows.Clear();foreach(var pair in notifications)NotificationRows[pair.Key]=pair.Value;CorrectionRows.Clear();foreach(var pair in corrections)CorrectionRows[pair.Key]=pair.Value;OrderViews.Clear();foreach(var pair in views)OrderViews[pair.Key]=pair.Value;CatalogItems.Clear();foreach(var pair in catalog)CatalogItems[pair.Key]=pair.Value;MagazineArticles.Clear();foreach(var pair in magazine)MagazineArticles[pair.Key]=pair.Value;MagazineAliases.Clear();foreach(var pair in aliases)MagazineAliases[pair.Key]=pair.Value;};
+        return ()=>{Attachments.Clear();foreach(var p in attachments) Attachments[p.Key]=p.Value;for(var i=0;i<tables.Length;i++){tables[i].Clear();foreach(var pair in copies[i])tables[i][pair.Key]=pair.Value;}Events.Clear();Events.AddRange(events);Settings.Clear();foreach(var pair in settings)Settings[pair.Key]=pair.Value;NotificationRows.Clear();foreach(var pair in notifications)NotificationRows[pair.Key]=pair.Value;CorrectionRows.Clear();foreach(var pair in corrections)CorrectionRows[pair.Key]=pair.Value;OrderViews.Clear();foreach(var pair in views)OrderViews[pair.Key]=pair.Value;CatalogItems.Clear();foreach(var pair in catalog)CatalogItems[pair.Key]=pair.Value;MagazineArticles.Clear();foreach(var pair in magazine)MagazineArticles[pair.Key]=pair.Value;MagazineAliases.Clear();foreach(var pair in aliases)MagazineAliases[pair.Key]=pair.Value;};
     }
     public JsonNode Copy(string key)=>Root[key]!.DeepClone();
     public Task<Dictionary<string,object?>?> ReadSetting(string key)=>Task.FromResult(Settings.TryGetValue(key,out var value)?new Dictionary<string,object?>{{"value",value}}:null);
@@ -55,6 +56,9 @@ internal sealed class MemoryApiData : IContentDefaults, IContentRepository, IPri
     public Task<Dictionary<string,object?>?> ReadSeedMarker()=>ReadSetting("content_initialized");
     public Task<List<Dictionary<string,object?>>> Articles(bool all)=>Task.FromResult(ArticleRows.Values.Where(row=>all||Convert.ToBoolean(row["published"])).Select(row=>row.ToDictionary()).ToList());
     public Task<Dictionary<string,object?>?> ReadRates()=>ReadSetting("rates");
+    public Task<byte[]> ReadTicketFile(string id)=>ReadPdf(id);
+    public Task WriteTicketFile(string id,byte[] bytes)=>WritePdf(id,bytes);
+    public void DeleteTicketFile(string id)=>DeletePdf(id);
     public Task<byte[]> ReadPdf(string key)=>Task.FromResult(Assets.TryGetValue(key,out var bytes)?bytes:throw new UseCaseException(ErrorKind.NotFound,"فایل آزمایشی در دسترس نیست."));
     public Task<byte[]> ReadImage(string id)=>Task.FromResult(Assets[id]);
     public Task WritePdf(string key,byte[] bytes){Assets.Add(key,bytes);return Task.CompletedTask;}
@@ -190,6 +194,9 @@ public class MemoryRepositoryProxy : DispatchProxy
             case "SearchTickets":return Rows((Convert.ToBoolean(a[5]) ? FilteredTickets(S(0),S(1),S(2)).Reverse() : FilteredTickets(S(0),S(1),S(2))).Skip(Convert.ToInt32(a[3])).Take(Convert.ToInt32(a[4])).Select(WithUnread));
             case "CountTickets":return Task.FromResult((long)FilteredTickets(S(0),S(1),S(2)).Count());
             case "Messages" when a.Length==1:return Rows(Data.MessagesById.Values.Where(m=>m.Str("ticket_id")==S(0)).OrderBy(m=>m.Str("created_at")));
+            case "SupportsAttachments":return Task.FromResult(true);
+            case "TicketFiles":return Task.FromResult(Data.Attachments.Values.Where(f=>Data.MessagesById.GetValueOrDefault(f.MessageId)?.GetValueOrDefault("ticket_id")?.ToString()==S(0) && (a[1] == null || f.MessageId == S(1)) && (a[2] == null || f.Id == S(2))).OrderBy(f=>f.Position).ToList());
+            case "AddFile":var attachment=(TicketFile)a[0]!;Data.Attachments.Add(attachment.Id,attachment);return Task.CompletedTask;
             case "LockExistingMessage":return Row(Data.MessagesById.GetValueOrDefault(S(0)));
             case "InsertMessage":Data.MessagesById[S(0)]=new(){["id"]=a[0],["ticket_id"]=a[1],["actor"]=a[2],["message"]=a[3],["created_at"]=a[4]};return Task.FromResult(1);
             case "UpdateStatus":case "UpdateAfterReply":Data.Tickets[S(2)]["status"]=a[0];Data.Tickets[S(2)]["updated_at"]=a[1];return Task.FromResult(1);

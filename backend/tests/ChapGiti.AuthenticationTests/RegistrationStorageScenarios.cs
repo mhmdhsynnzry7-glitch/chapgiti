@@ -103,7 +103,8 @@ internal static class RegistrationStorageScenarios
             public IDisposable? BeginScope<TState>(TState state) where TState:notnull=>null;
             public bool IsEnabled(LogLevel level)=>level>=LogLevel.Error;
             public void Log<TState>(LogLevel level,EventId eventId,TState state,Exception? exception,Func<TState,Exception?,string> formatter)
-            { if(exception is SqlException error) owner.Numbers.Add(error.Number); }
+            { if (exception != null) throw new InvalidOperationException("Raw exception reached error output");
+              if (state is IEnumerable<KeyValuePair<string,object?>> fields && fields.FirstOrDefault(f=>f.Key=="SqlNumber").Value is int number) owner.Numbers.Add(number); }
         }
     }
 }

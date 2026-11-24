@@ -1,3 +1,4 @@
+using ChapGiti.Api.Http;
 using System.Text.Json.Nodes;
 using ChapGiti.Application.Features;
 using Microsoft.AspNetCore.Mvc;
@@ -18,4 +19,8 @@ public sealed class TicketsController(TicketService tickets) : ApiControllerBase
     public async Task<IResult> Read(string id, JsonObject body) => Respond(await tickets.Read(id, body, false));
     [HttpPost("tickets/{id:guid}/messages")]
     public async Task<IResult> Reply(string id, JsonObject body) => Respond(await tickets.Reply(id, body));
+    [HttpPost("tickets/{id:guid}/messages/attachments"), RequestSizeLimit(16*1024*1024)]
+    public async Task<IResult> Attach(string id) => Respond(await TicketForm.Submit(Request, tickets, id, false));
+    [HttpGet("tickets/{id:guid}/attachments/{fileId:guid}")]
+    public async Task<IResult> Download(string id, string fileId) => Respond(await tickets.Download(id, fileId, false));
 }

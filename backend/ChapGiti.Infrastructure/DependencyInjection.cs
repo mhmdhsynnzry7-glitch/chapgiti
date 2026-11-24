@@ -37,7 +37,15 @@ public static class DependencyInjection
         services.AddScoped<IDatabaseMaintenance, DatabaseMaintenance>();
         services.AddSingleton<IContentDefaults, ContentDefaults>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton(provider =>
+        {
+            var config = provider.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
+            var count = Math.Clamp(config.GetValue("Support:MaxAttachments",3),1,3);
+            var bytes = Math.Clamp(config.GetValue("Support:MaxAttachmentBytes",4*1024*1024),1024,4*1024*1024);
+            return new ChapGiti.Application.Features.TicketAttachmentPolicy(count, bytes);
+        });
         services.AddSingleton<IPrivateFileStore, PrivateFileStore>();
+        services.AddSingleton<IPrivateErrorLog, PrivateErrorLog>();
         services.AddScoped<ISmsNotifier, SmsService>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();

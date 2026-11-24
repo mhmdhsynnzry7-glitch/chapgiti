@@ -50,9 +50,10 @@ public static class ApiRegistration
         services.Configure<ApiBehaviorOptions>(options =>
         {
             options.SuppressMapClientErrors = true;
-            options.InvalidModelStateResponseFactory = _ =>
-                new BadRequestObjectResult(new { error = "ساختار یا فیلدهای درخواست معتبر نیست." });
+            options.InvalidModelStateResponseFactory = c =>
+                new BadRequestObjectResult(new { error = "ساختار یا فیلدهای درخواست معتبر نیست.", code = "VALIDATION_INVALID", requestId = c.HttpContext.TraceIdentifier });
         });
+        services.AddSingleton(TimeProvider.System);
         return services;
     }
 
@@ -72,7 +73,7 @@ public static class ApiRegistration
         app.UseStatusCodePages(async context =>
         {
             var response = context.HttpContext.Response;
-            await response.WriteAsJsonAsync(new { error = response.StatusCode switch
+            await response.WriteAsJsonAsync(new { code = ExceptionMiddleware.DefaultCode(response.StatusCode), requestId = context.HttpContext.TraceIdentifier, error = response.StatusCode switch
             {
                 404 => "مسیر پیدا نشد.", 405 => "این عملیات در این مسیر مجاز نیست.",
                 413 => "حجم درخواست بیش از حد مجاز است.", 415 => "نوع محتوای درخواست معتبر نیست.",

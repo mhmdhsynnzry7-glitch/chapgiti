@@ -6,6 +6,7 @@ namespace ChapGiti.Application.Features;
 
 public sealed class OrderService(
     IOrderRepository repository,
+    ITicketRepository tickets,
     IUnitOfWork unitOfWork,
     SessionService sessions,
     PrintCatalogService catalog,
@@ -191,6 +192,7 @@ public sealed class OrderService(
         return UseCaseResult.Json(new
         {
             order, finalConditions,
+            openTicketId = await tickets.SupportsOrderLinks() ? await tickets.ActiveOrderTicket(customer.Str("id"), id, false) : null,
             events = await repository.TrackingEvents(id),
             specification,
             requiresBinding = OrderWorkflow.RequiresBinding(saved ?? new JsonObject()),
