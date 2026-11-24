@@ -26,7 +26,7 @@ internal static class OrderWorkflowAcceptance
             try
             {
                 await database.Create();
-                engine=await database.Read("SELECT CONVERT(nvarchar(128),SERVERPROPERTY('ProductVersion')) productVersion,CONVERT(nvarchar(128),SERVERPROPERTY('Edition')) edition,CONVERT(int,SERVERPROPERTY('IsLocalDB')) isLocalDb,CONVERT(nvarchar(128),SERVERPROPERTY('ServerName')) serverName,DB_NAME() databaseName,@@VERSION version");
+                engine=await database.Read("SELECT CONVERT(nvarchar(128),SERVERPROPERTY('ProductVersion')) productVersion,CONVERT(nvarchar(128),SERVERPROPERTY('Edition')) edition,CONVERT(int,SERVERPROPERTY('IsLocalDB')) isLocalDb,CONVERT(nvarchar(128),SERVERPROPERTY('ServerName')) serverName,DB_NAME() databaseName,@@VERSION version") ?? throw new InvalidOperationException("Required SQL acceptance row was missing.");
                 checks.Check(engine!.Num("isLocalDb")==1&&engine.Str("databaseName")==database.Name&&engine.Str("serverName")==database.Server,"actual SQL LocalDB server and disposable catalog identity match before migration writes");
                 Console.WriteLine("SQL_ENGINE="+engine.Str("productVersion")+" EDITION="+engine.Str("edition"));
                 foreach(var file in files.Take(upgrade?7:9))database.Stage(Path.GetFileName(file));
@@ -61,18 +61,26 @@ internal static class OrderWorkflowAcceptance
                 }
                 await using var host=await AcceptanceHost.Start(database);
                 using var api=new OrderWorkflowApi(database,fixtures,host,checks);await api.Login();
+                var cut=(await api.Request(api.Administrator,"GET","admin/print-catalog"))["items"]!.AsArray().Single(x=>x!["kind"]!.ToString()=="bookSizes" && x["code"]!.ToString()=="raghi")!;
+                var tariffPath="admin/print-tariffs/"+cut["id"];
+                var tariff=await api.Request(api.Administrator,"GET",tariffPath);
+                await api.Request(api.Administrator,"PUT",tariffPath,new{version=tariff["version"],rates=tariff["rates"],approveProposal=true});
                 if(upgrade)
                 {
                     checks.Check(await api.Counts(api.Customer,"customer")== (1,0),"historical unread notification remains separate from activation-baselined order attention");
                     var completed=await api.Detail(fixtures.Completed);checks.Check(completed["order"]!["status"]!.ToString()=="completed"&&completed["order"]!["final_price"]!.GetValue<long>()==123456,"historical completed production is never reset by migration or GET");
                     await api.Request(api.Administrator,"PATCH","admin/orders/"+fixtures.Pending,new{version=await api.Version(fixtures.Pending),status="printing",finalPrice=100},409,"ORDER_CORRECTION_REQUIRED");
                     await api.Request(api.Customer,"POST","customer/orders/"+fixtures.Pending+"/corrections/submit",await api.Submission(fixtures.Pending,fixtures.OriginalFile),409,"CORRECTION_NEW_PDF_REQUIRED");
-                    var archive=await api.Request(api.Customer,"GET","tickets/"+fixtures.GeneralTicket);checks.Check(archive["readOnly"]!.GetValue<bool>()&&archive["messages"]!.AsArray().Count==2,"real historical ticket and message rows remain readable as an authorized archive");
+                    var archive=await api.Request(api.Customer,"GET","tickets/"+fixtures.GeneralTicket);checks.Check(!archive["readOnly"]!.GetValue<bool>()&&archive["ticket"]!["status"]!.ToString()=="closed"&&archive["messages"]!.AsArray().Count==2,"real historical ticket and message rows remain readable as an authorized archive");
                     await api.Request(api.Other,"GET","tickets/"+fixtures.LinkedTicket,expected:404);
                     await fixtures.VerifyPrivateHistory(checks);
                 }
                 await OrderAttentionSqlScenarios.Run(api);
                 await OrderWorkflowSqlScenarios.Run(api);
+                // Measure the actual limit in its own fixture window, independently of the number of earlier business checks.
+                await database.Write("UPDATE dbo.Rate_Limits SET expires=0 WHERE [key] LIKE 'orders:%'");
+                for(var attempt=0;attempt<12;attempt++)
+                    await api.Request(api.Customer,"POST","orders",OrderWorkflowApi.Creation(),400,"ORDER_PDF_REQUIRED");
                 await api.Request(api.Customer,"POST","orders",OrderWorkflowApi.Creation(),429);
                 checks.Check(true,"real SQL intake rate limit remains enabled after twelve synthetic requests");
                 // Separate fixture batches must not share a 15-minute synthetic intake window.

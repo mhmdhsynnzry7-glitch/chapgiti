@@ -196,11 +196,15 @@ export async function finalUatChecks({ page, base, check }) {
   await page.getByRole("button", { name: "محاسبه هزینه", exact: true }).click();
   await page.locator(".price-summary").waitFor();
   check(
-    (await page.locator(".price-summary dt").allTextContents()).includes("آماده‌سازی کل سفارش") && await page.getByText("چاپ متن هر جلد", {exact:true}).isVisible() && await page.getByText("جلد و صحافی هر جلد", {exact:true}).isVisible() && await page.getByText("برآورد کل",{exact:true}).isVisible() && await page.getByText("مبلغ صرفه‌جویی").count() === 0,
+    JSON.stringify(await page.locator(".price-summary dt").allTextContents()) === JSON.stringify(["قطع کتاب","تیراژ","خدمات تکمیلی هر جلد","قیمت هر جلد قبل از تخفیف","جمع مبلغ مشمول تخفیف","تخفیف تیراژ","قیمت هر جلد بعد از تخفیف","برآورد کل"]),
     "calculator summarizes the selected cut, quantity, finishing, discount and estimate",
   );
   await page.screenshot({ path: folder + "/calculator-mobile.png" });
   await page.goto(base+"/tickets");
+  const subject=page.locator("#new-ticket input[name=subject]");
+  await subject.fill("ک");
+  await subject.evaluate(e=>e.reportValidity());
+  check(/[\u0600-\u06ff]/.test(await subject.evaluate(e=>e.validationMessage)), "invalid ticket subject has localized native validation");
   await page.locator("#new-ticket input[name=subject]").fill("درخواست آزمایشی چاپ");
   await page.locator("#new-ticket textarea").fill("لطفاً نمونه کتاب را بررسی کنید.");
   await page.locator("#new-ticket button").click();
@@ -210,15 +214,22 @@ export async function finalUatChecks({ page, base, check }) {
   try{
     await manager.goto(base+"/admin/tickets/"+ticket);
     await manager.locator(".ticket-thread textarea").fill("پاسخ ثبت‌شدهٔ چاپخانه");
-    await manager.locator(".ticket-thread form button").click();
+    const sample={name:"نمونه.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ipUgAAAAASUVORK5CYII=","base64")};
+    await manager.locator(".ticket-thread input[type=file]").setInputFiles(sample);
+    await manager.getByRole("button",{name:"حذف نمونه.png"}).click();
+    await manager.locator(".ticket-thread input[type=file]").setInputFiles(sample);
+    await manager.locator(".ticket-thread form").getByRole("button",{name:"ارسال پاسخ"}).click();
     await manager.getByText("پاسخ ثبت‌شدهٔ چاپخانه",{exact:true}).waitFor();
     await page.bringToFront();
     await page.getByText("پاسخ ثبت‌شدهٔ چاپخانه",{exact:true}).waitFor({timeout:20000});
     check(await page.locator(".ticket-bubble").count()===2,"customer receives persisted administrator reply once");
     await page.reload();await page.getByText("پاسخ ثبت‌شدهٔ چاپخانه",{exact:true}).waitFor();
     check(await page.locator(".ticket-bubble").count()===2,"thread survives refresh without duplicates");
+    const fileLink=page.getByRole("link",{name:"نمونه.png",exact:true});await fileLink.waitFor();
+    const download=await page.request.get(base+await fileLink.getAttribute("href"));
+    check(download.ok() && (await download.body()).equals(sample.buffer),"private ticket attachment survives refresh and downloads its original bytes");
     await page.screenshot({path:folder+"/support-mobile.png"});
-    await page.goto(base+"/account/notifications");
+    await page.goto(base+"/account");await page.locator(".notification-bell").click();
     const item=page.locator(".notification-item").first();await item.waitFor();
     check(await item.locator("a").count()===0 && await item.locator(".notification-open button").count()===0,"notification text has no entity navigation");
     const before=page.url(); await item.locator(".notification-open").click();

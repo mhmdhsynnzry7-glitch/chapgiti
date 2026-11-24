@@ -33,7 +33,7 @@ internal static class OrderRealtimeSqlScenarios
         api.Checks.Check(customer.Events.All(e=>e.AsObject().Count==2&&e["kind"]!.ToString()=="notifications"&&e["eventId"]!.ToString().Length==64),"SQL realtime messages contain opaque invalidation IDs only, with no private order/file data");
         await customer.DisposeAsync();
         var counts=await api.Counts(api.Customer,"customer");
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,false));
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true));
         await using var reconnected=await SqlRealtimeSocket.Open(api,api.Customer,api.CustomerCookies,"customer");
         var resynced=await api.Counts(api.Customer,"customer");var detail=await api.CustomerDetail(id);
         api.Checks.Check(resynced.Notices==counts.Notices+1&&detail["corrections"]!.AsArray().Last()!["state"]!.ToString()=="requested","real SignalR reconnect and HTTP resync recover the SQL correction notice missed while offline");

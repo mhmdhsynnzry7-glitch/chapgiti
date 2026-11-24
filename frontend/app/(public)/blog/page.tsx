@@ -3,7 +3,7 @@ import ArticleCard from "@/components/magazine-card";
 import { magazinePage } from "@/lib/magazine-server";
 import { seo } from "@/lib/seo";
 export const dynamic = "force-dynamic";
-export const metadata = seo(
+export const generateMetadata = () => seo(
   "مجله چاپ گیتی",
   "راهنماهای چاپ، آماده‌سازی کتاب و تجربه‌های نشر در مجله چاپ گیتی.",
   "/blog",

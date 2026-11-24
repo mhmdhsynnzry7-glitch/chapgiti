@@ -7,6 +7,10 @@ internal static class SessionScenarios
 {
     public static async Task Run(Action<bool,string> check)
     {
+        var limiter=new FakeStore();
+        var counts=await Task.WhenAll(Enumerable.Range(0,100).Select(_=>Task.Run(()=>limiter.IncrementRateLimit("parallel-test",1,3000))));
+        check(counts.Order().SequenceEqual(Enumerable.Range(1,100).Select(i=>(long)i)),
+            "concurrent authentication fixtures account for every request in one rate-limit window");
         var f=new AuthFixture();f.Existing(true);
         await f.Accounts.LoginCustomer(new(){["phone"]=AuthFixture.Phone,["password"]=AuthFixture.Password});
         var oldAccess=f.Request.CustomerToken!;var oldRefresh=f.Request.RefreshToken!;

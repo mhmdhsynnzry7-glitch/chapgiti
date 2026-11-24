@@ -2,6 +2,9 @@ namespace ChapGiti.Application.Abstractions;
 
 public interface IPrivateFileStore
 {
+    Task<byte[]> ReadTicketFile(string id);
+    Task WriteTicketFile(string id, byte[] bytes);
+    void DeleteTicketFile(string id);
     Task<byte[]> ReadPdf(string key);
     Task<byte[]> ReadImage(string id);
     Task WritePdf(string key, byte[] bytes);

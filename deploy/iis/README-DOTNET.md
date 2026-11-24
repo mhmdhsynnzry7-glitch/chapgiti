@@ -67,7 +67,8 @@ $env:ASPNETCORE_ENVIRONMENT='Production'
 $env:ASPNETCORE_URLS='http://127.0.0.1:5100'
 $env:Site__Url='http://127.0.0.1:3000'
 $env:Storage__Root='C:\src\chapgiti\data'
-$env:ConnectionStrings__SqlServer='Server=.;Database=ChapGiti;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;'
+if (-not $env:SQLSERVER_CONNECTION_STRING) { throw 'Load the private SQL setting for this installation first.' }
+$env:ConnectionStrings__SqlServer = $env:SQLSERVER_CONNECTION_STRING
 .\ChapGiti.Api.exe
 ```
 
@@ -139,7 +140,7 @@ DOTNET_API_URL=http://127.0.0.1:5100
 DATA_DIR=C:/Naghsh/data
 ALLOW_HTTP=true
 TRUST_IIS_PROXY=true
-SQLSERVER_CONNECTION_STRING=Server=.;Database=ChapGiti;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;
+SQLSERVER_CONNECTION_STRING=<private connection string for this installation>
 SMS_ENABLED=false
 INDEXING_ENABLED=false
 ```

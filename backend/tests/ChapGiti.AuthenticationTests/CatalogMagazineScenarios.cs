@@ -107,14 +107,14 @@ internal static class CatalogMagazineScenarios
         check(host.Data.MagazineArticles[id].Content==article["content"]!.ToString()&&host.Data.MagazineArticles[id].PublishedAt==published,"archive preserves original article body and recorded publication time");
         check(host.Fixture.Sender.Sends==0,"catalog/magazine tests send no real or simulated OTP");
         var prepared=await Send("POST","admin/articles/prepare-drafts");
-        check(prepared["inserted"]!.GetValue<int>()==5 && host.Data.MagazineArticles.Values.Count(a=>a.Status=="draft" && a.PublishedAt==null)==5,"five complete editorial guides are prepared exclusively as drafts");
+        check(prepared["inserted"]!.GetValue<int>()==6 && host.Data.MagazineArticles.Values.Count(a=>a.Status=="draft" && a.PublishedAt==null)==6,"six complete editorial guides are prepared exclusively as drafts");
         var guide=host.Data.MagazineArticles.Values.Single(a=>a.Slug=="choose-book-trim");
         foreach(var draft in host.Data.MagazineArticles.Values.Where(a=>a.Status=="draft"))
             check(draft.Content.Split(' ',StringSplitOptions.RemoveEmptyEntries).Length>170 && draft.Content.Contains("## ") && draft.Content.Contains("### ") && draft.Content.Contains("](/") && draft.SeoTitle.Length>4 && draft.SeoDescription.Length is >20 and <=180,"complete Persian editorial guide with headings, internal links and SEO: "+draft.Slug);
         var editorCopy=(await Send("GET","admin/articles/"+guide.Id)).AsObject();editorCopy["slug"]="custom-trim-guide";editorCopy["title"]="عنوان منتخب ویراستار";
         await Send("PUT","admin/articles/"+guide.Id,editorCopy);
         var repeated=await Send("POST","admin/articles/prepare-drafts");
-        check(repeated["skipped"]!.GetValue<int>()==5 && host.Data.MagazineArticles[guide.Id].Title=="عنوان منتخب ویراستار","idempotent preparation preserves edited titles, slugs and historical aliases");
+        check(repeated["skipped"]!.GetValue<int>()==6 && host.Data.MagazineArticles[guide.Id].Title=="عنوان منتخب ویراستار","idempotent preparation preserves edited titles, slugs and historical aliases");
         await Send("GET","public/articles/custom-trim-guide",status:404);
         var namedSitemap=article.DeepClone().AsObject();namedSitemap["slug"]="sitemap";
         var sitemapSaved=await Send("POST","admin/articles",namedSitemap,201);var sitemapId=sitemapSaved["id"]!.ToString();

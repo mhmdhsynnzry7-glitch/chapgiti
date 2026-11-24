@@ -40,7 +40,8 @@ export default function FinalConditions({
   editable: boolean;
   refresh: () => void;
 }) {
-  const [addressNeeded, setAddressNeeded] = useState(false);
+  const [addressNeeded, setAddressNeeded] = useState(!!terms?.address);
+  const [postedVersion, setPostedVersion] = useState<number>();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     sending = useRef(false),
@@ -62,6 +63,7 @@ export default function FinalConditions({
           idempotencyKey: keys.current.get(signature),
         }),
       });
+      setPostedVersion(version);
       refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "ثبت انجام نشد.");
@@ -109,18 +111,19 @@ export default function FinalConditions({
             </>
           )}
           <dt>نسخه {terms.revision}</dt>
-          <dd>{terms.acceptedAt ? "تأیید مشتری" : "در انتظار تأیید"}</dd>
+          <dd>{terms.acceptedAt ? "تأیید مشتری" : "در انتظار تأیید مشتری"}</dd>
         </dl>
       )}
-      {admin && editable && file && (!current || !terms.acceptedAt) && (
-        <details>
-          <summary>تنظیم شرایط نهایی</summary>
+      {admin && editable && file && postedVersion !== version && (
+        <details key={terms?.id ?? "new"} onToggle={event=>{if (event.currentTarget.open) setAddressNeeded(!!terms?.address);}}>
+          <summary>{current ? "ویرایش / اصلاح شرایط نهایی" : "تنظیم شرایط نهایی"}</summary>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
               void save("delivery-terms", {
                 reviewedFileId: file.id,
+                ...(current ? {revisionOf:terms.id} : {}),
                 delivery: f.get("delivery"),
                 method: f.get("method"), addressNeeded, address: addressNeeded ? f.get("address") : "", estimate: f.get("estimate"),
                 scope: f.get("scope"),
@@ -128,14 +131,14 @@ export default function FinalConditions({
               });
             }}
           >
-            <label className="field">روش تحویل توافق‌شده<input name="method" maxLength={160}/></label>
+            <label className="field">روش تحویل توافق‌شده<input name="method" defaultValue={terms?.method ?? ""} maxLength={160}/></label>
             <label className="check-field"><input type="checkbox" checked={addressNeeded} onChange={e=>setAddressNeeded(e.target.checked)}/>این تحویل به نشانی نیاز دارد</label>
-            {addressNeeded && <label className="field">نشانی تحویل<input name="address" required minLength={5} maxLength={600}/></label>}
-            <label className="field">زمان تقریبی توافق‌شده<input name="estimate" maxLength={160}/></label>
+            {addressNeeded && <label className="field">نشانی تحویل<input name="address" defaultValue={terms?.address ?? ""} required minLength={5} maxLength={600}/></label>}
+            <label className="field">زمان تقریبی توافق‌شده<input name="estimate" defaultValue={terms?.estimate ?? ""} maxLength={160}/></label>
             <label className="field">
               شرایط تحویل
               <textarea
-                name="delivery"
+                aria-label="شرایط تحویل" name="delivery" defaultValue={terms?.delivery ?? ""}
                 required
                 minLength={2}
                 maxLength={2000}
@@ -143,13 +146,13 @@ export default function FinalConditions({
             </label>
             <label className="field">
               محدوده خدمات غیرمالی
-              <textarea name="scope" maxLength={2000} />
+              <textarea aria-label="محدوده خدمات غیرمالی" name="scope" defaultValue={terms?.scope ?? ""} maxLength={2000} />
             </label>
             <label className="field">
               توضیح برای مشتری
-              <textarea name="comment" maxLength={2000} />
+              <textarea aria-label="توضیح برای مشتری" name="comment" defaultValue={terms?.comment ?? ""} maxLength={2000} />
             </label>
-            <button className="button" disabled={busy}>ارسال شرایط نهایی برای تأیید مشتری</button>
+            <button className="button" disabled={busy}>{busy ? "در حال ارسال…" : current ? "ثبت اصلاح و درخواست تأیید دوباره" : "ارسال شرایط نهایی برای تأیید مشتری"}</button>
           </form>
         </details>
       )}

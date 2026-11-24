@@ -275,9 +275,13 @@ internal sealed partial class FakeStore : IOtpRepository, IAccountRepository, IS
     public Task RemoveExpired(bool administrator,long now)=>Task.CompletedTask;
     public Task<long> IncrementRateLimit(string key,long now,long expires)
     {
-        var old=limits.GetValueOrDefault(key);
-        var count=old.Expires>now?old.Count+1:1;limits[key]=(count,old.Expires>now?old.Expires:expires);
-        return Task.FromResult((long)count);
+        lock (limits)
+        {
+            var old=limits.GetValueOrDefault(key);
+            var count=old.Expires>now?old.Count+1:1;
+            limits[key]=(count,old.Expires>now?old.Expires:expires);
+            return Task.FromResult((long)count);
+        }
     }
     public Task Audit(string id,string actor,string action,string createdAt) { Audits.Add(actor+":"+action); return Task.CompletedTask; }
     public Task<List<Dictionary<string,object?>>> RecentOrders(string id)=>Task.FromResult(new List<Dictionary<string,object?>>());

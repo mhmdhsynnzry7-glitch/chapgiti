@@ -57,10 +57,10 @@ export async function orderRevisionChecks({page:admin,base,check,control}) {
     await admin.goto(base+"/admin/orders/"+id);await admin.getByLabel("مبلغ پیشنهادی (تومان)",{exact:true}).waitFor();
     await until(async()=>(await counts(admin,"admin")).unseenOrderCount===0,"actual visible administrator detail marks the order viewed");check(true,"viewed order count decreases only after its detail is visible");
     await quote(200000);
-    await customer.goto(base+"/account/notifications");await customer.locator(".notification-center").waitFor();
+    await customer.goto(base+"/account");await customer.locator(".notification-bell").click();await customer.locator(".notification-popover").waitFor();
     await until(()=>customer.locator('.nav [data-badge="orders"]').count().then(n=>n===1),"customer navigation receives actionable order badge");
-    check(await customer.getByRole("heading",{name:"اعلان‌ها",exact:true}).isVisible()&&await customer.locator('.notification-center').getByRole("button",{name:"تازه‌سازی",exact:true}).count()===0,"notification center has one simple heading and no ordinary refresh control");
-    await customer.locator(".notification-center").getByRole("button",{name:"خواندن همه",exact:true}).click();
+    check(await customer.getByRole("heading",{name:"اعلان‌ها",exact:true}).isVisible()&&await customer.locator('.notification-popover').getByRole("button",{name:"تازه‌سازی",exact:true}).count()===0,"notification center has one simple heading and no ordinary refresh control");
+    await customer.locator(".notification-popover").getByRole("button",{name:"خواندن همه",exact:true}).click();
     await until(async()=>(await counts(customer,"customer")).unreadCount===0,"read-all persisted");
     check((await counts(customer,"customer")).unseenOrderCount===1,"customer order attention remains independent from notification read-all");
     await customer.goto(base+"/account/orders/"+id);await liveOrder(customer).waitFor();

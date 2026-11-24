@@ -2,6 +2,7 @@
 import Pagination from "./pagination";
 import { formatToman } from "@/lib/money";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   LayoutDashboard,
@@ -25,8 +26,8 @@ import {
 } from "lucide-react";
 import ManagementTable, { DateSort, PageSizeControl } from "./management-table";
 import AdminTickets from "./admin-tickets";
-import { NavigationBadge, NotificationBell, NotificationCenter } from "./notification-center";
-import { orderServices,optionalOrderPdfs } from "@/lib/order-requirements";
+import { NavigationBadge, NotificationBell } from "./notification-center";
+import { orderServiceLabel,orderServices,optionalOrderPdfs } from "@/lib/order-requirements";
 import AdminServices from "./admin-services";
 import AdminMagazine from "./admin-magazine";
 import AdminPrintCatalog from "./admin-print-catalog";
@@ -95,6 +96,7 @@ export default function AdminApp({
   initialOverview?: OverviewResult;
   initialOrder?: AdminOrderDetailData;
 }) {
+  const router = useRouter();
   const [mobile, setMobile] = useState(false);
   const [collapsed,setCollapsed]=useState(false);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(
@@ -106,6 +108,7 @@ export default function AdminApp({
     return () => clearTimeout(t);
   }, [toast]);
   const notify: Notify = (text, error = false) => setToast({ text, error });
+  const listFilters = useSearchParams().toString();
   const title = navigation.find((n) => n.id === section)?.title || "نمای کلی";
   return (
     <div className={"admin-shell"+(collapsed?" sidebar-collapsed":"")}>
@@ -124,7 +127,7 @@ export default function AdminApp({
         <nav className="admin-nav">
           {navigation.map((n) => (
             <Link prefetch={false}
-              href={"/admin/" + (n.id === "overview" ? "" : n.id)}
+              href={"/admin/" + (n.id === "overview" ? "" : n.id) + (n.id === "orders" && section === "orders" && listFilters ? "?" + listFilters : "")}
               key={n.id}
               className={section === n.id ? "active" : ""}
               aria-current={section === n.id ? "page" : undefined}
@@ -143,7 +146,7 @@ export default function AdminApp({
             <ExternalLink size={15} />
             مشاهده وب‌سایت
           </a>
-          <button type="button" className="text-link" onClick={async () => { const r = await sessionFetch("/api/auth/logout", { method: "POST" }); if (r.ok) window.location.assign("/admin/login"); }}>
+          <button type="button" className="text-link" onClick={async () => { const r = await sessionFetch("/api/auth/logout", { method: "POST" }); if (r.ok) { router.replace("/admin/login"); router.refresh(); } }}>
             <LogOut size={15} />
             خروج از حساب
           </button>
@@ -195,8 +198,7 @@ export default function AdminApp({
             <AdminPrintCatalog initialId={initialOrderId} notify={notify} />
           ) : section === "tickets" ? (
             <AdminTickets initialId={initialOrderId} />
-          ) : section === "notifications" ? (
-            <NotificationCenter />
+
           ) : section === "messages" ? (
             <Messages notify={notify} />
           ) : section === "settings" ? (
@@ -228,7 +230,7 @@ function OrderTable({
   onOpen?: (id: string) => void;
 }) {
   return <ManagementTable remote title="سفارش‌ها" columns={["سفارش / مشتری","آخرین تغییر","مبلغ","وضعیت"]} rows={orders.map(o=>({id:o.id,emphasis:o.attention?.required || o.attention?.unread,values:[o.title,date(o.updated_at || o.created_at),formatToman(o.final_price??o.estimate),statuses[o.status]],
-    cells:[<span key={o.id}>{o.title}<OrderAttention state={o.attention}/><small>{o.customer?.trim()||o.phone} · <bdi>{o.code}</bdi></small></span>,null,null,<Status key={o.status} value={o.status} label={statuses[o.status]}/>],
+    cells:[<span key={o.id}>{o.title}<small>{orderServiceLabel(o.service)}</small><OrderAttention state={o.attention}/><small>{o.customer?.trim()||o.phone} · <bdi>{o.code}</bdi></small></span>,null,null,<Status key={o.status} value={o.status} label={statuses[o.status]}/>],
     actions:onOpen?<button onClick={()=>onOpen(o.id)}>{o.attention?.required ? o.attention.label : "بررسی سفارش"}</button>:<Link href={"/admin/orders/"+o.id}>مشاهده</Link>}))}/>;
 }
 function Overview({ initialData }: { initialData?: OverviewResult }) {
@@ -380,14 +382,25 @@ function Overview({ initialData }: { initialData?: OverviewResult }) {
   );
 }
 function Orders({ notify, initialId, initialDetail }: { notify: Notify; initialId?: string; initialDetail?: AdminOrderDetailData }) {
-  const [oldestFirst,setOldestFirst]=useState(false);
-  const [selected, setSelected] = useState(initialId || "");
-  const [attention, setAttention] = useState("");
-  const [query, setQuery] = useState("");
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [pageSize,setPageSize]=useState(20);
-  const [page, setPage] = useState(1);
+  const router = useRouter();
+  const params = useSearchParams();
+  const selected = initialId;
+  const query = params.get("q") ?? "";
+  const [search, setSearch] = useState(query);
+  const status = params.get("status") ?? "";
+  const attention = params.get("attention") ?? "";
+  const oldestFirst = params.get("oldestFirst") === "true";
+  const pageSize = Number(params.get("pageSize")) || 20;
+  const page = Math.max(1, Number(params.get("page")) || 1);
+  const suffix = params.size ? "?" + params.toString() : "";
+  function filter(values: Record<string, string | number | boolean>) {
+    const next = new URLSearchParams(params.toString());
+    for (const [key,value] of Object.entries<string | number | boolean>({page:1, ...values})) {
+      if (value === "" || value === false || (key === "page" && value === 1)) next.delete(key);
+      else next.set(key, String(value));
+    }
+    router.replace("/admin/orders" + (next.size ? "?" + next : ""), {scroll:false});
+  }
   const { data, error, loading, reload } = useData<OrderListResult>(
     "admin/orders?q=" +
       encodeURIComponent(query) +
@@ -406,10 +419,7 @@ function Orders({ notify, initialId, initialDetail }: { notify: Notify; initialI
         id={selected}
         initialData={selected === initialId ? initialDetail : undefined}
         notify={notify}
-        back={() => {
-          setSelected("");
-          reload();
-        }}
+        back={() => router.push("/admin/orders" + suffix)}
       />
     );
   return (
@@ -429,12 +439,11 @@ function Orders({ notify, initialId, initialDetail }: { notify: Notify; initialI
           className="filterbar"
           onSubmit={(e) => {
             e.preventDefault();
-            setQuery(search);
-            setPage(1);
+            filter({q:search.trim()});
           }}
         >
           
-          <DateSort oldest={oldestFirst} change={v=>{setOldestFirst(v);setPage(1);}}/>
+          <DateSort oldest={oldestFirst} change={v=>filter({oldestFirst:v})}/>
           <button type="button" className="icon-button" disabled={loading} onClick={reload} aria-label="تازه‌سازی سفارش‌ها" title="تازه‌سازی سفارش‌ها">↻</button>
           <input
             className="search-input"
@@ -443,13 +452,12 @@ function Orders({ notify, initialId, initialDetail }: { notify: Notify; initialI
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <ActionFilter value={attention} change={v=>{setAttention(v);setPage(1);}}/>
+          <ActionFilter value={attention} change={v=>filter({attention:v})}/>
           <select
             aria-label="فیلتر وضعیت"
             value={status}
             onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
+              filter({status:e.target.value});
             }}
           >
             <option value="">همه وضعیت‌ها</option>
@@ -469,7 +477,7 @@ function Orders({ notify, initialId, initialDetail }: { notify: Notify; initialI
         ) : error ? (
           <ErrorState error={error} reload={reload} />
         ) : data && data.orders.length ? (
-          <OrderTable orders={data.orders} onOpen={setSelected} />
+          <OrderTable orders={data.orders} onOpen={id=>router.push("/admin/orders/" + encodeURIComponent(id) + suffix)} />
         ) : (
           <Empty
             title="سفارشی پیدا نشد"
@@ -477,8 +485,8 @@ function Orders({ notify, initialId, initialDetail }: { notify: Notify; initialI
           />
         )}
         {data && (<>
-          <PageSizeControl value={pageSize} change={n=>{setPageSize(n);setPage(1);}}/>
-          <Pagination className="pagination" page={page} pageSize={pageSize} total={data.total} noun="سفارش" loading={loading} onPageChange={setPage} />
+          <PageSizeControl value={pageSize} change={n=>filter({pageSize:n})}/>
+          <Pagination className="pagination" page={page} pageSize={pageSize} total={data.total} noun="سفارش" loading={loading} onPageChange={n=>filter({page:n})} />
         </>)}
       </section>
     </>

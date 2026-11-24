@@ -22,6 +22,7 @@ export default async function Page({ params }: { params: Promise<{ section?: str
     }
     throw error;
   }
+  if (section[0] === "notifications") redirect("/admin");
   if (section[0] === "users") redirect("/admin/customers");
   if (section[0] === "portfolio") redirect("/admin/services");
   let initialOverview: OverviewResult | undefined;

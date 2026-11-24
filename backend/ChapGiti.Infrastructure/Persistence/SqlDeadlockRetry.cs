@@ -2,7 +2,7 @@ using Microsoft.Data.SqlClient;
 
 namespace ChapGiti.Infrastructure.Persistence;
 
-// Only for standalone, idempotent notification queries/updates. SQL rolls back the
+// Only for standalone read-only projections or idempotent notification updates. SQL rolls back the
 // deadlock victim; retrying inside a business transaction would be unsafe.
 internal static class SqlDeadlockRetry
 {

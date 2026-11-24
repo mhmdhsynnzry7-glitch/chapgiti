@@ -1,4 +1,6 @@
 using System.Text.Json;
+using ChapGiti.Application.Abstractions;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using ChapGiti.Application.Common;
 using ChapGiti.Domain.Common;
 using Microsoft.Data.SqlClient;
@@ -11,13 +13,14 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
     {
         context.Response.Headers.CacheControl = "no-store";
         context.Response.Headers.XContentTypeOptions = "nosniff";
+        context.Response.Headers["X-Request-Id"] = context.TraceIdentifier;
         try
         {
             await next(context);
         }
         catch (RuleViolation error)
         {
-            await Error(context, 400, error.Message);
+            await Error(context, 400, error.Message, code:error.Code);
         }
         catch (UseCaseException error)
         {
@@ -54,7 +57,7 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested) { }
         catch (Exception error)
         {
-            logger.LogError(error, "Backend request failed");
+            logger.LogError("Backend failure {ExceptionType}, SQL {SqlNumber}, request {RequestId}", error.GetType().Name, (error as SqlException)?.Number, context.TraceIdentifier);
             await Error(context, 500, "در پردازش درخواست مشکلی پیش آمد. دوباره تلاش کنید.");
         }
     }
@@ -62,15 +65,21 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
     private static async Task Error(HttpContext context, int status, string message, int? retryAfterSeconds = null, string? code = null)
     {
         context.Response.StatusCode = status;
-        if (code is not null)
+        code ??= DefaultCode(status);
+        if (status >= 500)
         {
-            await context.Response.WriteAsJsonAsync(new { error = message, retryAfterSeconds, code });
-            return;
+            var endpoint = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
+            var operation = endpoint is null ? "HttpRequest" : endpoint.ControllerName + "." + endpoint.ActionName;
+            context.RequestServices.GetRequiredService<IPrivateErrorLog>().Write(operation, code, context.TraceIdentifier, status);
         }
-        await context.Response.WriteAsJsonAsync(new
-        {
-            error = message,
-            retryAfterSeconds
-        });
+        await context.Response.WriteAsJsonAsync(new { error = message, code, retryAfterSeconds, requestId = context.TraceIdentifier });
     }
+
+    internal static string DefaultCode(int status) => status switch
+    {
+        400 => "VALIDATION_INVALID", 401 => "AUTH_UNAUTHORIZED", 403 => "AUTH_FORBIDDEN",
+        404 => "RESOURCE_NOT_FOUND", 405 => "METHOD_NOT_ALLOWED", 409 => "RESOURCE_CONFLICT", 410 => "RESOURCE_GONE",
+        413 => "REQUEST_TOO_LARGE", 415 => "UNSUPPORTED_MEDIA", 429 => "RATE_LIMITED",
+        503 => "SERVICE_UNAVAILABLE", _ => "INTERNAL_SERVER_ERROR"
+    };
 }

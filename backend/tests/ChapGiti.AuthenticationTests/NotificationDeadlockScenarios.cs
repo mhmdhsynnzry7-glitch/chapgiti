@@ -23,6 +23,15 @@ internal static class NotificationDeadlockScenarios
         calls=0;
         try { await SqlDeadlockRetry.Run<int>(()=>{calls++;return Task.FromException<int>(new IOException("Simulated read failure"));},false);check(false,"non-SQL failures cannot be retried"); }
         catch(IOException) {check(calls==1,"unrelated notification persistence failures remain visible");}
+        calls=0;
+        var config=new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
+        await using (var store=new SqlStore(config))
+        {
+            var projection=await store.ReadOnly(() => ++calls==1
+                ? Task.FromException<string>(Failure(1205))
+                : Task.FromResult("complete order detail"));
+            check(calls==2 && projection=="complete order detail","a deadlock restarts the whole read-only order projection and returns only its completed result");
+        }
         calls=0;var committed=0;
         var updated=await SqlDeadlockRetry.Run(()=>{
             if(++calls==1)return Task.FromException<int>(Failure(1205));

@@ -55,6 +55,7 @@ await Suite(nameof(OtpProviderScenarios), () => OtpProviderScenarios.Run(Check))
 await Suite(nameof(OtpProviderApiScenarios), () => OtpProviderApiScenarios.Run(Check));
 await Suite(nameof(CustomerExperienceApiScenarios), () => CustomerExperienceApiScenarios.Run(Check));
 await Suite(nameof(BusinessScenarios), () => BusinessScenarios.Run(Check));
+await Suite(nameof(SupportFilesScenarios), () => SupportFilesScenarios.Run(Check));
 await Suite(nameof(WorkflowSupportScenarios), () => WorkflowSupportScenarios.Run(Check));
 await Suite(nameof(ContentAuditScenarios), () => ContentAuditScenarios.Run(Check));
 await Suite(nameof(ServiceCmsScenarios), () => ServiceCmsScenarios.Run(Check));

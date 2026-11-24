@@ -5,7 +5,7 @@ import type { Ticket, TicketMessage } from "./tickets";
 export type OrderReceipt = { id: string; code: string; estimate: number };
 export type ActionState = { code: string; actor: "customer" | "admin" | "none"; label: string; required: boolean; unread: boolean };
 export type OrderSummary = OrderReceipt & {
-  attention?: ActionState; updated_at?: string;
+  attention?: ActionState; updated_at?: string; service?: string;
   customer: string; phone: string; title: string; status: string;
   final_price: number | null; created_at: string;
 };
@@ -31,7 +31,7 @@ export type OrderDetail = { order: PrintOrder; files: OrderFile[]; events: Order
 export type CustomerOrderSummary = Pick<OrderSummary, "attention" | "id" | "code" | "title" | "status" | "estimate" | "final_price" | "created_at"> & { quote_amount?: number | null; quote_revision?: number; information_request?: string | null; service?: string; updated_at?: string };
 export type CustomerOrderPage = { items: CustomerOrderSummary[]; total: number; page: number; pageSize: number };
 export type OrderQuote = { id: string; order_id: string; revision: number; amount_toman: number; scope_text: string; delivery_terms: string; exclusions_text: string; state: string; sent_at: string; accepted_at?: string | null; decided_at?: string | null; decision_reason?: string; version: number };
-export type TrackingResult = OrderAttention & { requiresBinding?: boolean; order: CustomerOrderSummary & { version?: number; workflow_version?: number; information_request?: string | null; information_requires_file?: boolean }; events: (Pick<OrderEvent, "status" | "note" | "created_at"> & {actor_role?:"customer"|"admin"|"system"})[]; specification?: Partial<PrintSpec> & { customerNotes?: string; requiresPdf?: boolean }; files?: OrderFile[]; quotesAvailable?: boolean; quotes?: OrderQuote[] };
+export type TrackingResult = OrderAttention & { openTicketId?: string | null; requiresBinding?: boolean; order: CustomerOrderSummary & { version?: number; workflow_version?: number; information_request?: string | null; information_requires_file?: boolean }; events: (Pick<OrderEvent, "status" | "note" | "created_at"> & {actor_role?:"customer"|"admin"|"system"})[]; specification?: Partial<PrintSpec> & { customerNotes?: string; requiresPdf?: boolean }; files?: OrderFile[]; quotesAvailable?: boolean; quotes?: OrderQuote[] };
 export type OverviewResult = {
   summary: { total: number; value: number; customers: number };
   counts: { status: string; count: number }[];
@@ -56,4 +56,4 @@ export type SettingsResult = {
   orderRequirements?: Record<string, boolean>;
   sms: { enabled: boolean; configured: boolean; template: boolean };
 };
-export type TicketThreadResult = { ticket: Ticket; messages: TicketMessage[]; orderFiles?: Pick<OrderFile,"id" | "name" | "size">[]; readOnly?: boolean };
+export type TicketThreadResult = { attachmentLimits?: {count:number;bytes:number}; ticket: Ticket; messages: TicketMessage[]; orderFiles?: Pick<OrderFile,"id" | "name" | "size">[]; readOnly?: boolean };

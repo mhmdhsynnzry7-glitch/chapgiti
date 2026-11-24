@@ -111,7 +111,10 @@ try{
   const failedResources=[];p.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')failedResources.push({path:new URL(r.url()).pathname,error:r.failure()?.errorText});});p.on('response',r=>{if(r.status()>=500)failedResources.push({path:new URL(r.url()).pathname,status:r.status()});});
   let bytes=0,jsBytes=0,requests=0;const types=new Map();cdp.on('Network.responseReceived',e=>types.set(e.requestId,e.type));cdp.on('Network.requestWillBeSent',()=>requests++);cdp.on('Network.loadingFinished',e=>{bytes+=e.encodedDataLength;if(types.get(e.requestId)==='Script')jsBytes+=e.encodedDataLength;});
   await p.addInitScript(()=>{window.__metrics={lcp:0,cls:0,layoutShiftSum:0,eventDurations:[]};let firstShift=0,lastShift=0,sessionScore=0;new PerformanceObserver(l=>{for(const e of l.getEntries()){window.__metrics.lcp=e.startTime;window.__metrics.lcpElement=e.element?e.element.tagName+'.'+(e.element.getAttribute('class')||''):null;}}).observe({type:'largest-contentful-paint',buffered:true});new PerformanceObserver(l=>{for(const e of l.getEntries())if(!e.hadRecentInput){window.__metrics.layoutShiftSum+=e.value;if(lastShift>0&&e.startTime-lastShift<1000&&e.startTime-firstShift<5000){sessionScore+=e.value;}else{firstShift=e.startTime;sessionScore=e.value;}lastShift=e.startTime;window.__metrics.cls=Math.max(window.__metrics.cls,sessionScore);}}).observe({type:'layout-shift',buffered:true});try{new PerformanceObserver(l=>{for(const e of l.getEntries())if(e.interactionId)window.__metrics.eventDurations.push(e.duration);}).observe({type:'event',buffered:true,durationThreshold:16});}catch{}});
-  await p.goto(base+url,{waitUntil:'networkidle'});await p.evaluate(()=>document.fonts.ready);await pause(350);
+  // A live subscription may still be receiving data after the screen is interactive.
+  await p.goto(base+url,{waitUntil:'load'});
+  await p.locator(name==='calculator' ? '.book-calculator' : 'body').waitFor({state:'visible'});
+  await p.evaluate(()=>document.fonts.ready);await pause(350);
   // A deterministic focus/click is a lab interaction, not real-user INP.
   const interactionStart=performance.now();await p.keyboard.press('Tab');await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));const tabToPaintMs=performance.now()-interactionStart;await pause(100);
   const m=await p.evaluate(()=>{const n=performance.getEntriesByType('navigation')[0];return {...window.__metrics,ttfb:n.responseStart-n.requestStart,domContentLoaded:n.domContentLoadedEventEnd,resources:performance.getEntriesByType('resource').map(r=>({path:new URL(r.name).pathname,duration:r.duration})).sort((a,b)=>b.duration-a.duration).slice(0,3)};});
@@ -125,6 +128,12 @@ try{
   for(const [name,c,method,url,body]of profiles){const tasks=Array.from({length:concurrency},async()=>{const t=performance.now();const r=method==='PAGE'?{status:(await c.request.get(base+url)).status()}:await request(c,method,url,body);return {name,status:r.status,ms:performance.now()-t};});const rows=await Promise.all(tasks);samples.push(...rows);if(rows.some(r=>r.status!==200&&r.status!==429)){aborted=true;break;}}
   const elapsedMs=Date.now()-started;const after=await processStats();result.load.push({concurrency,elapsedMs,before,after,samples,aborted});save();console.log('LOAD concurrency='+concurrency+' requests='+samples.length+' non200='+samples.filter(r=>r.status!==200).length);if(aborted)break;
  }
+ }
+ if (process.argv.includes('--load-only') && result.load.length) {
+  // One customer login in setup uses the first slot in the 15-request window.
+  const logins=result.load.flatMap(batch=>batch.samples).filter(sample=>sample.name==='password-login');
+  check(logins.length===40 && logins.filter(sample=>sample.status===200).length===14 &&
+    logins.filter(sample=>sample.status===429).length===26, 'the isolated login limiter counts every concurrent request exactly once');
  }
  if(result.load.length)check(result.load.every(batch=>!batch.aborted&&batch.samples.every(sample=>sample.status===200||sample.status===429)),'controlled traffic has no unexpected HTTP errors');
  if(process.argv.includes('--final')){

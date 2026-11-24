@@ -20,6 +20,6 @@ export const publicArticles = async () =>
   (await backendApi<import("./magazine").MagazinePage>("public/articles"))
     .items;
 export const publicServices = async () => (await publicBootstrap()).services;
-export const origin = () => process.env.SITE_URL || "http://127.0.0.1:3000";
+export const origin = () => new URL(process.env.SITE_URL || "http://127.0.0.1:3000").origin;
 export const indexed = () => process.env.INDEXING_ENABLED === "true";
 export { BackendError };

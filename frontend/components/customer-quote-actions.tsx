@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { customerApi } from "@/lib/customer-client";
 import FinalConditions from "./final-conditions";
@@ -10,6 +10,11 @@ export default function CustomerQuoteActions({ result }: { result: TrackingResul
   const router=useRouter();const [reason,setReason]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");
   const sending=useRef(false),keys=useRef(new Map<string,string>());
   const order=result.order,quote=result.quotes?.at(-1);
+  useEffect(()=>{
+    const sync=(event:Event)=>{if ((event as CustomEvent<string>).detail===order.id) router.refresh();};
+    window.addEventListener("chap:order-conflict",sync);
+    return ()=>window.removeEventListener("chap:order-conflict",sync);
+  },[router,order.id]);
   const pending=order.status==="awaiting_customer_approval"&&quote?.state==="sent";
 
   async function act(action:string) {

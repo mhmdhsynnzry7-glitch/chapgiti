@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { orderServiceLabel } from "@/lib/order-requirements";
+import { useRef, useEffect, useState } from "react";
 import { api } from "@/lib/api-client";
 import type { OrderDetail } from "@/lib/api-contracts";
 import { date, money, adminStatuses as statuses } from "@/lib/pricing";
@@ -42,26 +43,36 @@ export default function AdminOrderDetail({ id, back, notify, initialData }: { id
   const [price, setPrice] = useState(""), [reason, setReason] = useState(""), [note, setNote] = useState("");
   const [noteKey, setNoteKey] = useState("");
   useEffect(() => {
+    const sync=(event:Event)=>{if ((event as CustomEvent<string>).detail===id) {setRevision(value=>value+1);notify("وضعیت سفارش تغییر کرده است. اطلاعات تازه را بررسی کنید.");}};
+    window.addEventListener("chap:order-conflict",sync);
+    return ()=>window.removeEventListener("chap:order-conflict",sync);
+  },[id,notify]);
+  useEffect(() => {
     const controller = new AbortController();
     api<AdminOrderDetailData>("admin/orders/" + id + "/open", { method: "POST", body: "{}", signal: controller.signal })
       .then(result => { if (!controller.signal.aborted) { setData(result); setPrice(new Intl.NumberFormat("en-US").format(result.order.final_price ?? result.order.estimate)); setError(""); setOpened(true); } })
       .catch(cause => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "دریافت سفارش انجام نشد."); });
     return () => controller.abort();
   }, [id, revision]);
+  const commands = useRef(new Map<string,string>());
+  const changing = useRef(false);
   async function transition(status: string) {
-    if (!opened || !data || busy) return;
+    if (!opened || !data || busy || changing.current) return;
     const proposalWorkflow = (data.order.workflow_version ?? 1) >= 2;
     const approving = status === "printing" && !proposalWorkflow;
     const amount = parseApprovedAmount(price);
     if (approving && amount == null) { setError("قیمت تأییدشده باید عدد صحیح بین صفر و ۱۰۰٬۰۰۰٬۰۰۰٬۰۰۰ تومان باشد."); return; }
     if (status === "cancelled" && !reason.trim()) { setError("دلیل رد سفارش را وارد کنید."); return; }
     if (!window.confirm(status === "cancelled" ? "سفارش با دلیل واردشده رد شود؟" : approving ? "سفارش با قیمت " + formatToman(amount) + " تأیید و وارد چاپ شود؟" : "وضعیت سفارش به «" + statuses[status] + "» تغییر کند؟")) return;
+    changing.current=true;
+    const signature=JSON.stringify([status,data.order.version,amount,reason]);
+    if (!commands.current.has(signature)) commands.current.set(signature,createRequestId());
     setBusy(true); setError("");
     try {
-      await api("admin/orders/" + id + (proposalWorkflow && status === "printing" ? "/start-printing" : ""), { method: proposalWorkflow && status === "printing" ? "POST" : "PATCH", body: JSON.stringify({ status, version: data.order.version, idempotencyKey: createRequestId(), ...(approving ? { finalPrice: amount } : {}), note: status === "cancelled" ? reason : "" }) });
+      await api("admin/orders/" + id + (proposalWorkflow && status === "printing" ? "/start-printing" : ""), { method: proposalWorkflow && status === "printing" ? "POST" : "PATCH", body: JSON.stringify({ status, version: data.order.version, idempotencyKey: commands.current.get(signature), ...(approving ? { finalPrice: amount } : {}), note: status === "cancelled" ? reason : "" }) });
       setData(await api<AdminOrderDetailData>("admin/orders/" + id)); setReason(""); notify("وضعیت سفارش ثبت شد.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "تغییر وضعیت انجام نشد."); }
-    finally { setBusy(false); }
+    finally { changing.current=false; setBusy(false); }
   }
   async function saveNote(event: React.FormEvent) {
     event.preventDefault(); if (!opened || busy || !data) return;
@@ -88,7 +99,7 @@ export default function AdminOrderDetail({ id, back, notify, initialData }: { id
     {error && <p className="error-message" role="alert">{error}<button className="text-link" onClick={() => { setOpened(false); setRevision(value => value + 1); }}>تازه‌سازی سفارش</button></p>}
     <div className="admin-grid"><section className="panel">
       <div className="panel-title"><h3>مشخصات سفارش</h3><Status value={order.status} label={statuses[order.status]} /></div>
-      <dl className="order-information"><div><dt>مشتری</dt><dd>{order.customer?.trim() || order.phone}</dd></div><div><dt>موبایل</dt><dd><bdi>{order.phone}</bdi></dd></div><div><dt>تاریخ ثبت</dt><dd>{date(order.created_at)}</dd></div><div><dt>صفحات / تیراژ</dt><dd>{order.spec.pages == null ? "ثبت نشده" : money(order.spec.pages)} / {order.spec.quantity == null ? "ثبت نشده" : money(order.spec.quantity)}</dd></div></dl>
+      <dl className="order-information"><div><dt>نوع خدمت</dt><dd>{orderServiceLabel(order.service)}</dd></div><div><dt>مشتری</dt><dd>{order.customer?.trim() || order.phone}</dd></div><div><dt>موبایل</dt><dd><bdi>{order.phone}</bdi></dd></div><div><dt>تاریخ ثبت</dt><dd>{date(order.created_at)}</dd></div><div><dt>صفحات / تیراژ</dt><dd>{order.spec.pages == null ? "ثبت نشده" : money(order.spec.pages)} / {order.spec.quantity == null ? "ثبت نشده" : money(order.spec.quantity)}</dd></div></dl>
       <BookSpecificationSummary spec={order.spec} />
       {order.spec.customerNotes && <p>{order.spec.customerNotes}</p>}
       <h3 id="order-files">فایل‌های سفارش</h3>{data.files.length ? <ul className="order-files">{data.files.map(file => <li key={file.id}><a href={"/api/admin/files/" + file.id}>{file.name}</a>{" · "}<a href={"/api/admin/files/"+file.id+"?preview=true"} target="_blank" rel="noopener noreferrer" aria-label={"نمایش "+file.name+" در برگهٔ جدید"}>نمایش</a>{file.fileVersion&&<span> · نسخهٔ {file.fileVersion.toLocaleString("fa-IR")}</span>}{order.approved_file_id===file.id&&<strong> · فایل تأییدشدهٔ چاپ</strong>} · <bdi>{money(Math.ceil(file.size / 1024))} KB</bdi></li>)}</ul> : <p>فایلی ارسال نشده است.</p>}

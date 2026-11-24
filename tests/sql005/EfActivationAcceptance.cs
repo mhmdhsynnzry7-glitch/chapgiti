@@ -14,7 +14,7 @@ internal static class EfActivationAcceptance
     private static readonly string Artifacts = Path.Combine(".qa", "ef-activation-" + Guid.NewGuid().ToString("N"));
     private static readonly string[] ExpectedEf = [
         "20261117090230_Legacy009Baseline", "20261117092337_CatalogAndMagazine",
-        "20261118113729_TicketMessageReadState", "20261122130922_CutTariffVersions", "20261123062444_ProposedCutTariffs"
+        "20261118113729_TicketMessageReadState", "20261122130922_CutTariffVersions", "20261123062444_ProposedCutTariffs", "20261124131104_TicketMessageAttachments"
     ];
     private static readonly string[] LegacyTables = [
         "Customer_Registrations", "Customer_Accounts", "Admin_Users", "Admin_Usernames",
@@ -184,7 +184,7 @@ internal static class EfActivationAcceptance
                     foreach (var (table, digest) in beforeRerun)
                         checks.Check(afterRerun[table] == digest, "rerun preserves edited " + table + " rows and timestamps without duplicate initialization");
 
-                    if (!upgrade) await Browser(database, host, checks);
+                    if (!upgrade) {await Browser(database, host, checks); host.AllowIsolatedFrontend(host.Origin);}
                     if (upgrade)
                     {
                         var preserved = await Snapshot(database);
@@ -192,9 +192,22 @@ internal static class EfActivationAcceptance
                             checks.Check(preserved[table] == digest, "catalog/magazine activity does not reprice or rewrite historical " + table);
                         await fixtures.VerifyPrivateHistory(checks);
                         await checks.Request(customer, "GET", "tickets/" + fixtures.GeneralTicket);
-                        await checks.Request(customer, "POST", "tickets", new { subject = "Retired intake", message = "Must never persist" }, 410);
-                        await checks.Request(admin, "PATCH", "admin/tickets/" + fixtures.LinkedTicket, new { status = "open" }, 410);
+
                     }
+                    using var outsider = host.Client();
+                    await checks.Request(outsider,"POST","customer/login",new{ phone=OrderWorkflowFixtures.OtherPhone,password=OrderWorkflowFixtures.Password });
+                    await ChapGiti.Acceptance.SupportAttachmentChecks.Run(checks.Check, customer, admin, outsider, guest);
+                    await using (var store=database.Store())
+                    {
+                        await database.Guard(store);
+                        var metadata=await store.Query("SELECT id,digest FROM dbo.Ticket_Attachments ORDER BY id");
+                        var folder=Path.Combine(fixtures.StorageRoot,"ticket-files");
+                        var disk=Directory.GetFiles(folder).OrderBy(Path.GetFileName,StringComparer.Ordinal).ToArray();
+                        checks.Check(disk.Select(Path.GetFileName).SequenceEqual(metadata.Select(f=>f.Str("id")),StringComparer.OrdinalIgnoreCase)
+                            && disk.Zip(metadata).All(pair => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(pair.First))).Equals(pair.Second.Str("digest"),StringComparison.OrdinalIgnoreCase)),
+                            "every SQL ticket attachment resolves to its exact private bytes and no unreferenced files remain");
+                    }
+                    await FinalAgreementAcceptance.Run(checks,host,admin,customer,option["id"]!.ToString());
                 }
             }
             catch (Exception error)
@@ -258,9 +271,9 @@ internal static class EfActivationAcceptance
         checks.Check((await database.Read("SELECT COUNT(*) n FROM dbo.Schema_Migrations"))!.Num("n") == 9, "legacy history has exactly nine entries");
         var ids = (await database.Read("SELECT (SELECT MigrationId FROM dbo.__EFMigrationsHistory ORDER BY MigrationId FOR JSON PATH) ids"))!.Str("ids");
         var applied = JsonNode.Parse(ids)!.AsArray().Select(row => row!["MigrationId"]!.GetValue<string>());
-        checks.Check(applied.SequenceEqual(ExpectedEf), "all four reviewed EF migrations are registered in order");
+        checks.Check(applied.SequenceEqual(ExpectedEf), "all reviewed EF migrations are registered in order");
         checks.Check((await database.Read("SELECT COUNT(*) n FROM sys.foreign_keys WHERE is_disabled=1 OR is_not_trusted=1"))!.Num("n") == 0, "all historical and EF foreign keys are enabled/trusted");
-        checks.Check((await database.Read("SELECT COUNT(*) n FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo')"))!.Num("n") == 36, "fresh/upgrade has the expected legacy, tariff, catalog and separate migration history tables");
+        checks.Check((await database.Read("SELECT COUNT(*) n FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo')"))!.Num("n") == 37, "fresh/upgrade includes private ticket attachments and separate migration histories");
     }
 
     private static async Task VerifyCatalogDataset(IsolatedDatabase database, AcceptanceChecks checks)
@@ -328,9 +341,9 @@ internal static class EfActivationAcceptance
         start.ArgumentList.Add(Artifacts);
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Cannot start SQL-backed activation browser.");
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
-        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(100)); }
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(4)); }
         catch { if (!process.HasExited) process.Kill(entireProcessTree: true); throw; }
         await File.WriteAllTextAsync(Path.Combine(Artifacts, "sql-browser.log"), await output + await error);
-        checks.Check(process.ExitCode == 0, "real SQL -> EF/API -> Next customer catalog and magazine browser acceptance succeeds");
+        checks.Check(process.ExitCode == 0, "real SQL -> EF/API -> Next registration, order, revisions, initial ticket attachments, catalog and magazine succeed");
     }
 }

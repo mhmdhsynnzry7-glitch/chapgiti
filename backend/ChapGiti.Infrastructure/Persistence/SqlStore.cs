@@ -24,6 +24,7 @@ internal sealed class SqlStore(IConfiguration config, CommittedUpdates? updates 
     private bool? orderViews;
     public async Task<bool> SupportsCorrections() => corrections ??= (await One("SELECT CASE WHEN OBJECT_ID('dbo.Order_Corrections') IS NOT NULL AND COL_LENGTH('dbo.Orders','approved_file_id') IS NOT NULL AND COL_LENGTH('dbo.Files','correction_id') IS NOT NULL AND COL_LENGTH('dbo.Files','file_version') IS NOT NULL THEN 1 ELSE 0 END supported"))!.Num("supported") == 1;
     public async Task<bool> SupportsOrderViews() => orderViews ??= (await One("SELECT CASE WHEN OBJECT_ID('dbo.Order_Views') IS NOT NULL THEN 1 ELSE 0 END supported"))!.Num("supported") == 1;
+    public Task<T> ReadOnly<T>(Func<Task<T>> query) => SqlDeadlockRetry.Run(query, InTransaction);
     public bool InTransaction => Context.Database.CurrentTransaction != null;
     public async Task<bool> SupportsNotifications() => notifications ??= (await One("SELECT CASE WHEN OBJECT_ID('dbo.Notifications') IS NOT NULL THEN 1 ELSE 0 END supported"))!.Num("supported") == 1;
     public async Task<bool> SupportsQuoteWorkflow() => quoteWorkflow ??= (await One("SELECT CASE WHEN OBJECT_ID('dbo.Order_Quotes') IS NOT NULL AND OBJECT_ID('dbo.Order_Commands') IS NOT NULL AND COL_LENGTH('dbo.Orders','workflow_version') IS NOT NULL THEN 1 ELSE 0 END supported"))!.Num("supported") == 1;

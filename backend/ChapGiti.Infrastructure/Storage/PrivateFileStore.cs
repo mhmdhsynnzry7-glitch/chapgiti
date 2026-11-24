@@ -22,6 +22,11 @@ public sealed class PrivateFileStore : IPrivateFileStore
         return Path.Combine(root, "uploads", key.Replace('/', Path.DirectorySeparatorChar));
     }
 
+    private string TicketPath(string id) => Guid.TryParseExact(id, "D", out _) ? Path.Combine(root, "ticket-files", id) : throw new RuleViolation("شناسهٔ پیوست معتبر نیست.");
+    public Task<byte[]> ReadTicketFile(string id) => Read(TicketPath(id));
+    public Task WriteTicketFile(string id, byte[] bytes) => Write(TicketPath(id),bytes);
+    public void DeleteTicketFile(string id) => File.Delete(TicketPath(id));
+
     private string ImagePath(string id)
     {
         if (!Guid.TryParseExact(id, "D", out _))

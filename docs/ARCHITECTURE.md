@@ -1,10 +1,12 @@
 # معماری چاپ گیتی
 
-به‌روزرسانی جاری ۲۰۲۶/۱۱/۱۷: EF Core 10.0.15 مسیر اصلی persistence است؛ مدل از schema واقعی SQL001–009 در LocalDB موقت استخراج و خط مبنای آن پیش از ثبت اعتبارسنجی می‌شود. کاتالوگ چاپ و مجلهٔ عمومی/مدیریت به SQL متصل‌اند. این وظیفه فقط سورس و آزمون است و دیتابیس کاری، انتشار و بسته‌های قبلی را تغییر نداده است. راهنمای [پذیرش EF](EF-CORE-ADOPTION-FA.md) و گزارش نهایی بر شرح‌های تاریخی مقدم‌اند.
+وضعیت ۲۰۲۶/۱۱/۲۴. گفت‌وگوهای پشتیبانی و اعلان‌های هر نقش از SignalR و SQL استفاده می‌کنند. نسخهٔ جاری شرایط نهایی به تأیید مستقل مشتری وابسته است. فرادادهٔ پیوست‌ها با EF و بایت‌ها در فضای خصوصی ذخیره می‌شوند. [راهنمای عملیاتی](WORKFLOW-SUPPORT-OPERATIONS-FA.md)
+
+سابقهٔ معماری ۲۰۲۶/۱۱/۱۷: EF Core 10.0.15 مسیر اصلی persistence است؛ مدل از schema واقعی SQL001–009 در LocalDB موقت استخراج و خط مبنای آن پیش از ثبت اعتبارسنجی می‌شود. کاتالوگ چاپ و مجلهٔ عمومی/مدیریت به SQL متصل‌اند. آن مرحله فقط سورس و آزمون است و دیتابیس کاری، انتشار و بسته‌های قبلی را تغییر نداده است. راهنمای [پذیرش EF](EF-CORE-ADOPTION-FA.md) و گزارش نهایی بر شرح‌های تاریخی مقدم‌اند.
 
 به‌روزرسانی ۲۰۲۶/۱۱/۱۷: پذیرش SQL واقعیِ migrationهای ۰۰۸/۰۰۹ و گردش اصلاحیه/مشاهده روی دو نمونهٔ اختصاصی SQL Server 2019 LocalDB 15.0.4382.1 موفق شد. دیتابیس کاری خوانده یا فعال نشد و fixtureها حذف شدند. نتایج، محدودهٔ اعتبار و فعال‌سازی بعدی.
 
-به‌روزرسانی جاری ۲۰۲۶/۱۱/۱۶: گردش اصلاحیهٔ نسخه‌دار، کنترل مرکزی آمادگی چاپ و مشاهدهٔ مستقل سفارش در سورس پیاده‌سازی شده‌اند. تیکت فقط آرشیو مجاز است و تنها دو مسیر SignalR اعلان فعال می‌مانند. migrationهای ۰۰۸/۰۰۹ فقط آماده شده‌اند؛ در این وظیفه هیچ دسترسی به SQL یا اجرای مهاجرت صورت نگرفته است. [قرارداد جاری و روش بررسی](ORDER-CORRECTIONS-AND-ATTENTION-FA.md) بر توضیحات قدیمی پشتیبانی فعال در این سند مقدم است.
+در مرحلهٔ ۲۰۲۶/۱۱/۱۶ گردش اصلاحیه، آمادگی چاپ و مشاهدهٔ مستقل سفارش پیاده‌سازی شدند. قرارداد جاری پشتیبانی و پیوست‌ها در راهنمای پشتیبانی مستند شده است. [قرارداد سفارش](ORDER-CORRECTIONS-AND-ATTENTION-FA.md)
 
 به‌روزرسانی ۲۰۲۶/۱۱/۱۴: SignalR فقط برای اعلان مشتری، اعلان مدیر و گفت‌وگوی پشتیبانی افزوده شده است. SQL و REST منبع معتبر باقی‌اند؛ hintها پس از commit و پایان تراکنش ارسال می‌شوند، نشست و مالکیت پیش از تحویل دوباره بررسی می‌شود و polling fallback حفظ شده است. جدول یا migration جدید ندارد. [قرارداد، امنیت و نیازمندی‌های پراکسی](SIGNALR-REALTIME-FA.md).
 
@@ -46,7 +48,7 @@ API مسیرها و متد HTTP را به متدهای Application وصل می�
 
 برای افزودن قابلیت، قانون مربوط را در Domain، عملیات را در Application و نیاز خارجی را به‌صورت interface تعریف کنید. پیاده‌سازی در Infrastructure و مسیر HTTP در API اضافه شود.
 
-npm run test:architecture ارجاع اسمبلی‌های کامپایل‌شده و نبود وابستگی HTTP / دیتابیس / فایل در لایه‌های داخلی را بررسی می‌کند. تست‌های فعلی دیتابیس فقط خواندنی‌اند و اتصال و مسیرهای GET را روی همان دیتابیس موجود بررسی می‌کنند. آزمون‌های درج و ویرایش داده غیرفعال‌اند؛ هیچ دیتابیس آزمایشی ساخته نمی‌شود.
+آزمون `npm run test:architecture` جهت وابستگی اسمبلی‌ها و مرزهای Domain و Application را بررسی می‌کند. بررسی عملیاتی دیتابیس خواندنی است. آزمون نوشتنی `tests/sql005` با آرگومان `--authorize-disposable-ef-activation` نصب تازه و ارتقا را با دادهٔ مصنوعی در SQL Server LocalDB اختصاصی اجرا می‌کند.
 
 tools/legacy-sqlite فقط ابزار سازگاری مهاجرت است و در اجرای سایت وارد نمی‌شود. data و .env.local و کلیدهای پیامک داخل بستهٔ سورس و انتشار قرار نمی‌گیرند.
 
@@ -63,7 +65,7 @@ Migrations مستقیماً به catalog پیکربندی‌شده متصل می
 
 Next.js خدمات منتشرشده را از bootstrap بک‌اند به‌صورت SSR نمایش می‌دهد؛ عنوان، توضیح سئو و canonical از محتوای ذخیره‌شده می‌آیند. تغییر slug، alias قبلی را نگه می‌دارد؛ مسیر قبلی عمومی به canonical با 308 هدایت می‌شود. خدمت غیرفعال در API عمومی و صفحات در دسترس نیست. تصویر اختیاری از زیرساخت موجود banner-assets می‌آید و در نبود تصویر، تصویرسازی قبلی استفاده می‌شود.
 
-تنها اقدام اصلی کارت و جزئیات خدمات «درخواست مشاوره» به /contact است. ایجاد، پاسخ و تغییر وضعیت تیکت غیرفعال است؛ فقط آرشیو دارای مجوز خوانده می‌شود. محاسبه‌گر و سفارش مستقل حفظ شده‌اند.
+کارت و جزئیات خدمات به مشاوره در `/contact` پیوند دارند. مشتری از `/tickets` پشتیبانی عمومی و از جزئیات سفارش گفت‌وگوی همان سفارش را باز می‌کند. پاسخ، پیوست و وضعیت تیکت مستقل از تأیید رسمی فایل و قیمت هستند.
 
 دکمهٔ بنر یک جفت اختیاری label/link است؛ نبودن هر دو، هیچ دکمه یا پیوند روی کل بنر ایجاد نمی‌کند. اطلاعات سایت سه کلید اختیاری `instagram`، `telegram` و `bale` دارد؛ فقط URLهای HTTPS با میزبان و قالب معتبر همان شبکه پذیرفته می‌شوند. مشتری قدیمی API که این فیلدها را نمی‌فرستد مقادیر ذخیره‌شده را پاک نمی‌کند.
 
@@ -131,7 +133,7 @@ Migration `006_order_quotes.sql` ستون‌های status را گسترش می�
 جزئیات قراردادها، محدودیت rollout و نتایج آزمون در گزارش گردش سفارش و پشتیبانی آمده است.
 # Current order correction and attention extension (2026-11-16)
 
-The approved source implementation adds purpose-specific correction cycles, structural private PDF validation, one centralized production gate for both quote and legacy paths, and independent persisted order-view acknowledgements. Support tickets are now authorized read-only archives; active intake/replies/status writes and support SignalR endpoints are retired. The two recipient-isolated notification hubs retain their existing delivery/polling behavior. This supersedes older active-support descriptions in this historical document.
+The approved source implementation adds purpose-specific correction cycles, structural private PDF validation, one centralized production gate for both quote and legacy paths, and independent persisted order-view acknowledgements. Support tickets accept customer and administrator replies. Ticket ownership is checked before subscribing to a conversation or downloading a message attachment. REST persists business changes and the existing scoped SignalR hubs deliver hints after commit.
 
 See [ORDER-CORRECTIONS-AND-ATTENTION-FA.md](ORDER-CORRECTIONS-AND-ATTENTION-FA.md) for contracts, security boundaries, pending source-only migrations 008/009 and local verification. No operational database access or migration execution was part of this implementation.
 

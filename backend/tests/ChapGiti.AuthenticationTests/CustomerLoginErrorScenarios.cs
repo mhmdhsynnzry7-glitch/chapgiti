@@ -62,13 +62,13 @@ internal static class CustomerLoginErrorScenarios
             check(incorrect.Status == HttpStatusCode.Unauthorized && incorrect.Body["code"]?.ToString() == CustomerLoginErrors.IncorrectPassword &&
                 incorrect.Body["error"]?.ToString() == CustomerLoginErrors.IncorrectPasswordMessage,
                 "existing normalized mobile with a wrong password returns HTTP 401 and a distinct structured code");
-            check(incorrect.Body.Count == 3, "customer login errors return no account or profile details");
+            check(incorrect.Body.Select(p=>p.Key).Order().SequenceEqual(new[]{"code","error","requestId","retryAfterSeconds"}), "customer login errors return no account or profile details");
         }
         var invalid = await Login("customer/login", new { phone = "invalid", password = "Wrong.Password@1" });
-        check(invalid.Status == HttpStatusCode.BadRequest && !invalid.Body.ContainsKey("code"),
+        check(invalid.Status == HttpStatusCode.BadRequest && invalid.Body["code"]?.ToString()=="PHONE_INVALID",
             "malformed mobile numbers remain validation errors instead of account-existence errors");
         var administrator = await Login("auth/login", new { username = "admin", password = "Wrong.Password@1" });
-        check(administrator.Status == HttpStatusCode.Unauthorized && !administrator.Body.ContainsKey("code") &&
+        check(administrator.Status == HttpStatusCode.Unauthorized && administrator.Body["code"]?.ToString()=="AUTH_UNAUTHORIZED" &&
             administrator.Body["error"]?.ToString() == "نام کاربری یا رمز عبور صحیح نیست.",
             "administrator authentication retains its original generic error and response shape");
         check(host.Fixture.Store.Accounts.Count == 1 && host.Fixture.Store.Access.Count == 0 && host.Fixture.Store.Refresh.Count == 0 &&

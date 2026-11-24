@@ -48,13 +48,13 @@ internal sealed class OrderWorkflowApi : IDisposable
         return(result["unreadCount"]!.GetValue<long>(),result["unseenOrderCount"]!.GetValue<long>());
     }
     public async Task<JsonObject> Command(string id)=>new(){["idempotencyKey"]=Guid.NewGuid().ToString(),["expectedVersion"]=await Version(id)};
-    public async Task<string> Create(string service="cover-design",bool file=false)
+    public async Task<string> Create(string service="cover-design",bool file=true)
     {
         var body=Creation(service);
         var result=await Request(Customer,"POST","orders",file?Multipart(body,OrderWorkflowFixtures.Pdf()):body,201);
         return result["id"]!.ToString();
     }
-    public static JsonObject Creation(string service="cover-design")=>new(){["idempotencyKey"]=Guid.NewGuid().ToString(),["title"]="Isolated SQL print request",["service"]=service,
+    public static JsonObject Creation(string service="cover-design")=>new(){["idempotencyKey"]=Guid.NewGuid().ToString(),["termsAccepted"]=true,["title"]="Isolated SQL print request",["service"]=service,
         ["spec"]=new JsonObject{["pages"]=120,["quantity"]=1,["size"]="raghi",["paper"]="white",["color"]="bw",["binding"]="soft"}};
     public static MultipartFormDataContent Multipart(JsonObject body,byte[] bytes,string type="application/pdf")
     {
@@ -73,7 +73,7 @@ internal sealed class OrderWorkflowApi : IDisposable
     }
     public async Task<JsonObject> Correction(string id,bool required)
     {
-        var body=await Command(id);body["message"]="Correct the supplied print specification";body["requiresFile"]=required;return body;
+        var body=await Command(id);body["reason"]="File review";body["message"]="Correct the supplied print specification";body["requiresFile"]=required;return body;
     }
     public async Task<JsonObject> Submission(string id,string? file=null)
     {
@@ -98,7 +98,24 @@ internal sealed class OrderWorkflowApi : IDisposable
     }
     public async Task<string> Ready()
     {
-        var id=await Create();await Request(Administrator,"POST","admin/orders/"+id+"/open",new{});await Quote(id);await Accept(id);return id;
+        var id=await Create();await Request(Administrator,"POST","admin/orders/"+id+"/open",new{});await Quote(id);await Accept(id);await SignTerms(id);return id;
+    }
+    public async Task SignTerms(string id)
+    {
+        var terms=await Command(id);
+        var detail=await Detail(id);
+        terms["delivery"]="Collect the printed production run";
+        terms["reviewedFileId"]=detail["order"]!["approved_file_id"]!.ToString();
+        if(detail["finalConditions"] is JsonObject current) terms["revisionOf"]=current["id"]!.ToString();
+        await Request(Administrator,"POST","admin/orders/"+id+"/delivery-terms",terms);
+        var accept=await Command(id);accept["termsId"]=terms["idempotencyKey"]!.ToString();
+        await Request(Customer,"POST","customer/orders/"+id+"/delivery-terms/accept",accept);
+    }
+    public async Task<JsonObject> UploadSubmission(string id)
+    {
+        var revision=(await Detail(id))["corrections"]!.AsArray().Last()!["id"]!.ToString();
+        var upload=await Upload(id,revision);
+        return await Submission(id,upload["id"]!.ToString());
     }
     public void Dispose(){Customer.Dispose();Administrator.Dispose();Other.Dispose();Guest.Dispose();}
 }

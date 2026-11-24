@@ -3,3 +3,8 @@ export const orderServices = {
   "page-layout":"چاپ و صفحه‌آرایی", "catalog-printing":"کاتالوگ و نشریه",
 } as const;
 export const optionalOrderPdfs = Object.fromEntries(Object.keys(orderServices).map(key=>[key,false]));
+
+export function orderServiceLabel(code?: string) {
+  return code && Object.hasOwn(orderServices, code)
+    ? orderServices[code as keyof typeof orderServices] : "خدمت ثبت‌شده ناشناخته است";
+}

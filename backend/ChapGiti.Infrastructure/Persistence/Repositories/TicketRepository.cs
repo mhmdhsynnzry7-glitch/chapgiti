@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using ChapGiti.Infrastructure.Persistence.Ef.Models;
 namespace ChapGiti.Infrastructure.Persistence.Repositories;
 
 internal sealed class TicketRepository(SqlStore db) : ITicketRepository
@@ -49,8 +51,8 @@ internal sealed class TicketRepository(SqlStore db) : ITicketRepository
     public Task<List<Dictionary<string, object?>>> OrderConversations(string orderId) =>
         db.Query("SELECT id, subject, status FROM dbo.Tickets WHERE order_id=@p0 ORDER BY updated_at DESC, id", orderId);
 
-    public async Task<string?> ActiveOrderTicket(string customer, string order) =>
-        (await db.One("SELECT TOP (1) id FROM dbo.Tickets WITH(UPDLOCK,HOLDLOCK) WHERE customer_id=@p0 AND order_id=@p1 AND status <> 'closed' ORDER BY updated_at DESC,id", customer, order))?.Str("id");
+    public async Task<string?> ActiveOrderTicket(string customer, string order, bool locked = true) =>
+        (await db.One("SELECT TOP (1) id FROM dbo.Tickets "+(locked ? "WITH(UPDLOCK,HOLDLOCK)" : "")+" WHERE customer_id=@p0 AND order_id=@p1 AND status <> 'closed' ORDER BY updated_at DESC,id", customer, order))?.Str("id");
 
     public async Task<long> UnreadSupport(string? customerId, string incomingActor)
     {
@@ -68,6 +70,24 @@ internal sealed class TicketRepository(SqlStore db) : ITicketRepository
             WHERE m.ticket_id=@p0 AND m.actor=@p1 AND m.read_at IS NULL
               AND (m.created_at<last.created_at OR (m.created_at=last.created_at AND m.id<=last.id))
             """,ticket,actor,throughId);
+
+    private bool? attachments;
+    public async Task<bool> SupportsAttachments() => attachments ??= (await db.One("SELECT CASE WHEN OBJECT_ID('dbo.Ticket_Attachments') IS NULL THEN 0 ELSE 1 END ready"))!.Num("ready")==1;
+
+    public async Task<List<TicketFile>> TicketFiles(string ticketId, string? messageId = null, string? fileId = null)
+    {
+        if (!await SupportsAttachments()) return [];
+        return await (from attachment in db.Context.Set<TicketAttachment>().AsNoTracking()
+                      join message in db.Context.TicketMessages on attachment.MessageId equals message.Id
+                      where message.TicketId == ticketId && (messageId == null || attachment.MessageId == messageId)
+                              && (fileId == null || attachment.Id == fileId)
+                      orderby attachment.MessageId, attachment.Position
+                      select new TicketFile(attachment.Id, attachment.MessageId, attachment.Name, attachment.Mime, attachment.Size, attachment.Position, attachment.Digest)).ToListAsync();
+    }
+
+    public async Task AddFile(TicketFile file) => await db.Insert(new TicketAttachment {
+        Id=file.Id, MessageId=file.MessageId, Name=file.Name, Mime=file.Mime, Size=file.Size, Position=file.Position, Digest=file.Digest
+    });
 
     public Task<int> InsertInitialMessage(string id, string message, string createdAt)
     {

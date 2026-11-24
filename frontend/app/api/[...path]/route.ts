@@ -14,12 +14,13 @@ async function proxy(request:Request){
     const options:RequestInit&{duplex?:"half"}={method:request.method,headers,cache:"no-store",redirect:"manual",signal:request.signal};
     if(request.method!=="GET"&&request.method!=="HEAD"){options.body=request.body;options.duplex="half";}
     const response=await fetch(target,options),out=new Headers();
-    for(const key of ["content-type","content-disposition","cache-control","content-security-policy","x-content-type-options","location","retry-after"])
+    for(const key of ["content-type","content-disposition","cache-control","content-security-policy","x-content-type-options","location","retry-after","x-request-id"])
       if(response.headers.has(key))out.set(key,response.headers.get(key)!);
     for(const cookie of response.headers.getSetCookie())out.append("set-cookie",cookie);
     return new Response(response.body,{status:response.status,headers:out});
   }catch{
-    return Response.json({error:"ارتباط با سرویس برقرار نشد؛ دوباره تلاش کنید."},{status:502,headers:{"Cache-Control":"no-store"}});
+    const requestId=crypto.randomUUID();
+    return Response.json({error:"ارتباط با سرویس برقرار نشد. دوباره تلاش کنید.",code:"UPSTREAM_UNAVAILABLE",requestId},{status:502,headers:{"Cache-Control":"no-store","X-Request-Id":requestId}});
   }
 }
 export {proxy as GET,proxy as POST,proxy as PUT,proxy as PATCH};

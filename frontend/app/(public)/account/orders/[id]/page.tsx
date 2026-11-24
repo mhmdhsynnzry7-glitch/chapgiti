@@ -13,6 +13,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   try { result = await backendApi<TrackingResult>("customer/orders/" + id); }
   catch (error) { if (error instanceof BackendError && error.status === 404) notFound(); throw error; }
   return <div className="container page-body customer-order-page"><Link prefetch={false} className="text-link" href="/account/orders">بازگشت به سفارش‌های من ↖</Link>
-    <section className="panel"><h1 className="order-detail-title">جزئیات سفارش</h1><OrderTrackingDetails result={result} /><Link href={"/tickets?order="+id+"#new-ticket"}>پشتیبانی درباره این سفارش</Link></section>
+    <section className="panel"><h1 className="order-detail-title">جزئیات سفارش</h1><OrderTrackingDetails result={result} /><Link href={result.openTicketId ? "/tickets/"+result.openTicketId : "/tickets?order="+id+"#new-ticket"}>{result.openTicketId ? "ادامه گفت‌وگوی سفارش" : "پشتیبانی درباره این سفارش"}</Link></section>
   </div>;
 }

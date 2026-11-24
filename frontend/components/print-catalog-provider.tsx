@@ -8,7 +8,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
 import { catalogOptions, type CatalogItem } from "@/lib/print-catalog";
 import type { PrintOptions } from "@/lib/book-options";
 type State = {
@@ -19,33 +18,15 @@ type State = {
   reload: () => void;
 };
 const Context = createContext<State | null>(null);
-export function PrintCatalogProvider({ children }: { children: ReactNode }) {
-  const path = usePathname();
-  return (
-    <CatalogState
-      key={path}
-      enabled={path === "/calculator" || path === "/order"}
-    >
-      {children}
-    </CatalogState>
-  );
-}
-function CatalogState({
-  children,
-  enabled,
-}: {
-  children: ReactNode;
-  enabled: boolean;
-}) {
+export function PrintCatalogProvider({ children, initialItems }: { children: ReactNode; initialItems?: CatalogItem[] }) {
   const [data, setData] = useState<{
       items: CatalogItem[];
       options: PrintOptions;
-    } | null>(null),
+    } | null>(() => initialItems ? {items:initialItems, options:catalogOptions(initialItems)} : null),
     [error, setError] = useState("");
   const controller = useRef<AbortController | null>(null);
   // Keep the last catalog while revalidating; an error disables submission rather than dropping a draft.
   const reload = useCallback(() => {
-    if (!enabled) return;
     controller.current?.abort();
     const request = new AbortController();
     controller.current = request;
@@ -80,10 +61,9 @@ function CatalogState({
               : "ارتباط با چاپخانه برقرار نشد.",
           );
       });
-  }, [enabled]);
+  }, []);
   useEffect(() => {
-    if (!enabled) return;
-    reload();
+    if (!initialItems) reload();
     const visible = () => {
       if (!document.hidden) reload();
     };
@@ -104,7 +84,7 @@ function CatalogState({
       document.removeEventListener("visibilitychange", visible);
       window.removeEventListener("chap-print-catalog-changed", visible);
     };
-  }, [enabled, reload]);
+  }, [initialItems, reload]);
   return (
     <Context
       value={{

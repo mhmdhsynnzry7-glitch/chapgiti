@@ -1,3 +1,4 @@
+import { publicIndexingChecks } from "./public-indexing-ui.mjs";
 import { workflowModernizationChecks } from "./workflow-modernization-ui.mjs";
 import { finalUatChecks } from "./final-uat-ui.mjs";
 import { requestToPrintChecks } from "./request-to-print-ui.mjs";
@@ -97,7 +98,7 @@ try {
     backend.once("exit", code => { clearTimeout(timer); reject(new Error("Memory API exited: " + code)); });
   });
   const control = async values => { const response = await fetch(apiOrigin + "/__test/control", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values) }); assert.ok(response.ok); return response.json(); };
-  const web = start(process.execPath, [path.resolve("frontend/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: path.resolve("frontend"), env: { ...cleanEnv, NODE_ENV: "production", CHAP_GITI_VERIFY_BUILD: "true", SITE_URL: base, DOTNET_API_URL: apiOrigin, INDEXING_ENABLED: "false" } }, "ui-frontend");
+  const web = start(process.execPath, [path.resolve("frontend/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: path.resolve("frontend"), env: { ...cleanEnv, NODE_ENV: "production", CHAP_GITI_VERIFY_BUILD: "true", SITE_URL: base, DOTNET_API_URL: apiOrigin, INDEXING_ENABLED: process.argv.includes("--public-indexing") ? "true" : "false" } }, "ui-frontend");
   await ready(base + "/customer", web);
   browser = await chromium.launch({ headless: true, executablePath: chrome });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -159,7 +160,10 @@ try {
     await target.waitForURL(url => url.pathname === destination);
   }
 
-  if(process.argv.includes("--workflow-modernization")){
+  if(process.argv.includes("--public-indexing")) {
+    await login(page,adminPhone); await adminLogin(page,"/admin/articles");
+    await publicIndexingChecks({page,base,check});
+  } else if(process.argv.includes("--workflow-modernization")){
     await login(page,adminPhone);await adminLogin(page,"/admin/settings");
     await workflowModernizationChecks({page,browser,base,check,control});
   } else if(process.argv.includes("--final-uat")){
@@ -173,10 +177,10 @@ try {
     await login(page, adminPhone); await adminLogin(page, "/admin/orders");
     await orderRevisionChecks({page,base,check,control});
   } else if (realtime) {
-    await login(page, adminPhone); await adminLogin(page, "/admin/notifications");
+    await login(page, adminPhone); await adminLogin(page, "/admin");
     await realtimeChecks({browser,page,base,check,control});
   } else if (notifications) {
-    await login(page, adminPhone); await adminLogin(page, "/admin/notifications");
+    await login(page, adminPhone); await adminLogin(page, "/admin");
     await notificationChecks({browser,page,base,check,control});
   } else if (requestWorkflow) {
     await login(page, adminPhone); await adminLogin(page, "/admin/orders");

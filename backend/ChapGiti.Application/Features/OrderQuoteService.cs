@@ -123,14 +123,25 @@ public sealed class OrderQuoteService(IOrderQuoteRepository quotes, IAdminOrderR
             }
             else
             {
-                if (history.LastOrDefault() is JsonObject previous && previous["supersededAt"] == null)
-                    previous["supersededAt"] = now;
-                history.Add(new JsonObject { ["id"] = Input.Id(body), ["revision"] = history.Count + 1,
+                var next = new JsonObject { ["id"] = Input.Id(body), ["revision"] = history.Count + 1,
                     ["delivery"] = Input.Text(body, "delivery", 2, 2000), ["scope"] = Input.Text(body, "scope", 0, 2000),
                     ["method"] = Input.Text(body, "method", 0, 160), ["estimate"] = Input.Text(body, "estimate", 0, 160),
                     ["address"] = Input.Flag(body, "addressNeeded") ? Input.Text(body, "address", 5, 600) : "",
                     ["comment"] = Input.Text(body, "comment", 0, 2000), ["fileId"] = file.Id, ["correctionId"] = correctionId,
-                    ["quoteId"] = quote.Str("id"), ["issuedAt"] = now, ["issuedBy"] = actor.Str("id"), ["specificationVersion"] = OrderProductionReadiness.SpecificationVersion(spec) });
+                    ["quoteId"] = quote.Str("id"), ["issuedAt"] = now, ["issuedBy"] = actor.Str("id"), ["specificationVersion"] = OrderProductionReadiness.SpecificationVersion(spec) };
+                if (history.LastOrDefault() is JsonObject previous && previous["supersededAt"] == null)
+                {
+                    bool sameBasis = new[] { "fileId", "correctionId", "quoteId", "specificationVersion" }.All(k=>JsonNode.DeepEquals(previous[k],next[k]));
+                    if (sameBasis)
+                    {
+                        if (body["revisionOf"]?.ToString() != previous["id"]?.ToString())
+                            throw Conflict("شرایط قبلاً ارسال شده است. برای تغییر، نسخهٔ جاری را اصلاح کنید.", "FINAL_TERMS_STALE");
+                        if (new[] {"delivery","scope","method","estimate","address","comment"}.All(k=>JsonNode.DeepEquals(previous[k],next[k])))
+                            throw Conflict("شرایط تغییری نکرده است.", "FINAL_TERMS_UNCHANGED");
+                    }
+                    previous["supersededAt"] = now;
+                }
+                history.Add(next);
             }
             await corrections.SaveSpecification(id, spec.ToJsonString());
             await Move(order, "confirmed", StoredPrice(order), amend ? "درخواست اصلاح شرایط تحویل: " + Input.Text(body, "reason", 2, 900) : accept ? "مشتری شرایط نهایی چاپ و تحویل را تأیید کرد." : "شرایط نهایی چاپ و تحویل برای تأیید مشتری ارسال شد.", identity, now);

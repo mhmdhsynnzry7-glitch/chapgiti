@@ -57,7 +57,7 @@ catch (RuleViolation)
 {
     Check(true, "invalid order transition is rejected");
 }
-Check(TicketWorkflow.AfterReply(true) == "awaiting_customer" &&
+Check(TicketWorkflow.AfterReply(true) == "open" && TicketWorkflow.AfterReply(true, "awaiting_customer") == "awaiting_customer" &&
     TicketWorkflow.AfterReply(false) == "open", "ticket ownership roles determine the next reply status");
 Check(!OrderWorkflow.Allowed("review",true).Contains("printing"),"new review cannot bypass customer approval even with an administrator price");
 OrderWorkflow.ValidateChange("review","printing",123,true,proposalWorkflow:false);

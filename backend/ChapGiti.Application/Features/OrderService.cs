@@ -6,6 +6,7 @@ namespace ChapGiti.Application.Features;
 
 public sealed class OrderService(
     IOrderRepository repository,
+    ITicketRepository tickets,
     IUnitOfWork unitOfWork,
     SessionService sessions,
     PrintCatalogService catalog,
@@ -167,10 +168,15 @@ public sealed class OrderService(
     public async Task<UseCaseResult> CustomerOrder(string id)
     {
         var customer = (await sessions.Customer())!;
+        return await unitOfWork.ReadOnly(() => ReadCustomerOrder(id, customer.Str("id")));
+    }
+
+    private async Task<UseCaseResult> ReadCustomerOrder(string id, string customerId)
+    {
         // Capture before loading the snapshot: a later concurrent event must not
         // be acknowledged merely because it arrived while details were loading.
-        var observedSequence = await views.Latest(id, new NotificationRecipient("customer", customer.Str("id")));
-        var order = await repository.CustomerOrder(id, customer.Str("id"))
+        var observedSequence = await views.Latest(id, new NotificationRecipient("customer", customerId));
+        var order = await repository.CustomerOrder(id, customerId)
             ?? throw new UseCaseException(ErrorKind.NotFound, "سفارش مورد نظر پیدا نشد.");
         // Only the owner's saved production specification is public to this account.
         // Historical pricing breakdown and internal/admin fields remain private.
@@ -187,10 +193,11 @@ public sealed class OrderService(
                 finalConditions.Remove(key);
         }
         order.Remove("spec");
-        await AddCustomerAttention(order, customer.Str("id"));
+        await AddCustomerAttention(order, customerId);
         return UseCaseResult.Json(new
         {
             order, finalConditions,
+            openTicketId = await tickets.SupportsOrderLinks() ? await tickets.ActiveOrderTicket(customerId, id, false) : null,
             events = await repository.TrackingEvents(id),
             specification,
             requiresBinding = OrderWorkflow.RequiresBinding(saved ?? new JsonObject()),

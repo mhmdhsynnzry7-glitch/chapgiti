@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
 import type { CatalogItem } from "@/lib/print-catalog";
 import CatalogSelect from "./catalog-select";
@@ -23,9 +23,13 @@ export default function CutTariffEditor({onDirty}: {onDirty: (value: boolean) =>
   const [revision, setRevision] = useState<Revision | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [message, setMessage] = useState(""), [error, setError] = useState("");
-  const [busy, setBusy] = useState(false), [copySource, setCopySource] = useState("");
+  const pending = useRef(false);
+  const [operation, setOperation] = useState<"copy" | "save" | null>(null);
+  const busy = operation !== null;
+  const [copySource, setCopySource] = useState("");
+  const valid = keys.every(key => /^\d+$/.test(fields[key] ?? "") && Number(fields[key]) <= 10_000_000);
   const cut = cuts.find(item => item.id === id);
-  const dirty = !!revision && keys.some(key => fields[key] !== String(revision.rates?.[key] ?? ""));
+  const dirty = !!revision && keys.some(key => !fields[key] ? fields[key] !== String(revision.rates?.[key] ?? "") : Number(fields[key]) !== revision.rates?.[key]);
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => {
     const request = new AbortController();
@@ -43,34 +47,34 @@ export default function CutTariffEditor({onDirty}: {onDirty: (value: boolean) =>
     return () => request.abort();
   }, [id, reload]);
   function select(next: string) {
-    if (busy || next === id || (dirty && !window.confirm("تغییرات این قطع ذخیره نشده است. قطع تغییر کند؟"))) return;
+    if (pending.current || next === id || (dirty && !window.confirm("تغییرات این قطع ذخیره نشده است. قطع تغییر کند؟"))) return;
     setId(next); setRevision(null); setFields({}); setCopySource(""); setMessage(""); setError("");
   }
   async function copy() {
     const source = cuts.find(item => item.id === copySource);
-    if (!source || !cut || busy || !window.confirm("مبالغ «" + source.label + "» در فرم «" + cut.label + "» جایگزین شوند؟ برای ثبت، ذخیره را بزنید.")) return;
-    setBusy(true); setMessage(""); setError("");
+    if (!source || !cut || pending.current || !window.confirm("مبالغ «" + source.label + "» در فرم «" + cut.label + "» جایگزین شوند؟ برای ثبت، ذخیره را بزنید.")) return;
+    pending.current = true; setOperation("copy"); setMessage(""); setError("");
     try {
       const row = await api<Revision>("admin/print-tariffs/" + source.id);
       if (!row.rates) throw new Error("برای قطع مبدأ تعرفه‌ای ثبت نشده است.");
       setFields(asFields(row)); setMessage("مبالغ در فرم کپی شد. پیش از ثبت، آن‌ها را بررسی کنید.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "دریافت تعرفه انجام نشد."); }
-    finally { setBusy(false); }
+    finally { pending.current = false; setOperation(null); }
   }
   async function save() {
-    if (!revision || !id || busy) return;
+    if (!revision || !id || pending.current || (!dirty && !revision.isProposed)) return;
     setMessage(""); setError("");
-    if (keys.some(key => !/^\d+$/.test(fields[key] ?? "") || Number(fields[key]) > 10_000_000)) {
+    if (!valid) {
       setError("همهٔ مبلغ‌ها را بین صفر و ده میلیون تومان وارد کنید."); return;
     }
-    setBusy(true);
+    pending.current = true; setOperation("save");
     try {
       const rates = Object.fromEntries(keys.map(key => [key, Number(fields[key])]));
       const row = await api<Revision>("admin/print-tariffs/" + id, {method:"PUT",
         body: JSON.stringify({version:revision.version, rates, approveProposal:revision.isProposed})});
       setRevision(row); setFields(asFields(row)); setMessage("تعرفهٔ این قطع ذخیره شد.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "ذخیره انجام نشد."); }
-    finally { setBusy(false); }
+    finally { pending.current = false; setOperation(null); }
   }
   const choices = cuts.map(item => ({value: item.id, label: item.label, description: dimensions(item)}));
   return <section className="cut-tariff-panel panel" aria-label="تعرفه چاپ بر اساس قطع">
@@ -92,10 +96,11 @@ export default function CutTariffEditor({onDirty}: {onDirty: (value: boolean) =>
         <button type="button" className="button button-outline" disabled={busy || !copySource} onClick={copy}>کپی در فرم</button>
       </details>
       <div className="tariff-actions">
-        <button type="button" className="button" disabled={busy || (!dirty && !revision.isProposed)} onClick={save}>
-          {busy ? "در حال دریافت یا ذخیره…" : revision.isProposed ? "تأیید و فعال‌سازی تعرفه این قطع" : "ذخیره تعرفه این قطع"}</button>
+        <button type="button" className="button" disabled={busy || !valid || (!dirty && !revision.isProposed)} aria-busy={operation === "save"} onClick={save}>
+          {operation === "save" ? "در حال ذخیره تعرفه…" : revision.isProposed ? "تأیید و فعال‌سازی تعرفه این قطع" : "ذخیره تعرفه این قطع"}</button>
         <button type="button" className="button button-outline" disabled={busy || !dirty}
           onClick={() => {setFields(asFields(revision)); setError(""); setMessage("");}}>لغو تغییرات</button>
+        {!busy && !dirty && !revision.isProposed && revision.version > 0 && <small>همهٔ تغییرات ذخیره شده‌اند.</small>}
       </div></>}
     {message && <p role="status">{message}</p>}
     {error && <div role="alert" className="error-message">{error} <button type="button" onClick={() => {

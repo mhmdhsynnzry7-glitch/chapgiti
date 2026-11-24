@@ -8,5 +8,5 @@ public static class TicketWorkflow
         if (status is not ("open" or "awaiting_customer" or "closed"))
             throw new RuleViolation("وضعیت تیکت معتبر نیست.");
     }
-    public static string AfterReply(bool administrator) => administrator ? "awaiting_customer" : "open";
+    public static string AfterReply(bool administrator, string current = "open") => administrator && current == "awaiting_customer" ? current : "open";
 }

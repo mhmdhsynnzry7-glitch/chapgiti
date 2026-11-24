@@ -36,6 +36,21 @@ export async function acceptFinalConditions(admin, customer, base, orderId) {
   const accepted = customer.waitForResponse(r => r.request().method()==="POST" && r.url().endsWith("/delivery-terms/accept"));
   await customer.getByRole("button",{name:"تأیید نهایی و ثبت توافق"}).click();
   assert.equal((await accepted).status(),200);
+  // The administrator still has the version from before the owner's decision.
+  const edit=admin.getByText("ویرایش / اصلاح شرایط نهایی",{exact:true});await edit.click();
+  await admin.locator(".delivery-conditions details[open] textarea[name=delivery]").fill("تحویل در محل دوم");
+  const conflict=admin.waitForResponse(r=>r.request().method()==="POST" && r.url().endsWith("/delivery-terms"));
+  await admin.getByRole("button",{name:"ثبت اصلاح و درخواست تأیید دوباره"}).click();
+  const stale=await conflict;assert.equal(stale.status(),409);assert.equal((await stale.json()).code,"ORDER_VERSION_CONFLICT");
+  await admin.getByRole("definition",{name:""}).filter({hasText:"تأیید مشتری"}).first().waitFor();
+  await admin.reload();await edit.click();
+  await admin.locator(".delivery-conditions details[open] textarea[name=delivery]").fill("تحویل در محل دوم");
+  const issuedAgain=admin.waitForResponse(r=>r.request().method()==="POST" && r.url().endsWith("/delivery-terms"));
+  await admin.getByRole("button",{name:"ثبت اصلاح و درخواست تأیید دوباره"}).click();
+  assert.equal((await issuedAgain).status(),200);assert.equal((await attempt("start-printing")).status(),409);
+  await customer.reload();await customer.getByRole("definition").filter({hasText:/^تحویل در محل دوم$/}).filter({visible:true}).first().waitFor();
+  const confirmed=customer.waitForResponse(r=>r.request().method()==="POST" && r.url().endsWith("/delivery-terms/accept"));
+  await customer.getByRole("button",{name:"تأیید نهایی و ثبت توافق"}).click();assert.equal((await confirmed).status(),200);
   await admin.reload();
   return ticket.id;
 }

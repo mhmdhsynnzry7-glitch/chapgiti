@@ -57,7 +57,7 @@ export async function catalogMagazineChecks({ page, base, check }) {
     });
   };
   await page.route("**/api/public/print-catalog", unavailable);
-  await page.goto(base + "/calculator");
+  await page.goto(base + "/order");
   await page
     .getByText("در حال دریافت گزینه‌های چاپ…", { exact: true })
     .waitFor();
@@ -76,6 +76,9 @@ export async function catalogMagazineChecks({ page, base, check }) {
   await page.unroute("**/api/public/print-catalog", unavailable);
   await page.getByRole("button", { name: "تلاش دوباره", exact: true }).click();
   await trigger("قطع کتاب").waitFor();
+  const html = await (await page.request.get(base + "/calculator")).text();
+  check(html.includes("قطع کتاب"), "authenticated calculator includes its catalog fields in the first HTML response");
+  await page.goto(base + "/calculator");
   await trigger("قطع کتاب").click();
   await page.getByLabel("جست‌وجو در قطع کتاب", { exact: true }).fill("وزیری");
   check(

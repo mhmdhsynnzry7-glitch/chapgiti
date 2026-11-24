@@ -1,3 +1,4 @@
+import { responseData } from "./api-error";
 import { redirectToCustomerLogin } from "./customer-client";
 import { sessionFetch } from "./session-client";
 
@@ -7,14 +8,9 @@ export async function api<T = unknown>(path: string, options: RequestInit = {}):
     ...options,
     headers: { ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...options.headers },
   });
-  const data: unknown = await response.json();
   if (response.status === 401) {
-    if (path.startsWith("admin/")) window.location.assign("/admin/login?next=" + encodeURIComponent(location.pathname + location.search));
+    if (path.startsWith("admin/")) window.location.replace("/admin/login?next=" + encodeURIComponent(location.pathname + location.search));
     else if (!path.startsWith("auth/")) redirectToCustomerLogin();
   }
-  if (!response.ok) {
-    const message = data && typeof data === "object" && "error" in data ? data.error : null;
-    throw new Error(typeof message === "string" ? message : "درخواست انجام نشد.");
-  }
-  return data as T;
+  return responseData(response) as Promise<T>;
 }

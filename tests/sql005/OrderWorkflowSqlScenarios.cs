@@ -12,8 +12,8 @@ internal static class OrderWorkflowSqlScenarios
         var settings=await api.Request(api.Administrator,"GET","admin/settings");
         await api.Request(api.Administrator,"PUT","admin/settings",new JsonObject {
             ["site"]=settings["site"]!.DeepClone(),["rates"]=settings["rates"]!.DeepClone(),
-            ["orderRequirements"]=new JsonObject{["book-printing"]=true,["publishing"]=false,["cover-design"]=false,["page-layout"]=false,["catalog-printing"]=false}});
-        checks.Check((await api.Request(api.Guest,"GET","public/bootstrap"))["orderRequirements"]!["book-printing"]!.GetValue<bool>(),"SQL-backed PDF policy is visible in the existing public bootstrap");
+            ["orderRequirements"]=new JsonObject{["book-printing"]=true,["publishing"]=false,["cover-design"]=false,["page-layout"]=false,["catalog-printing"]=false}},400);
+        checks.Check((await api.Request(api.Guest,"GET","public/bootstrap"))["orderRequirements"]!.AsObject().All(option=>option.Value!.GetValue<bool>()),"public bootstrap requires a PDF for every print service");
         var before=await Snapshot(db);
         await api.Request(api.Customer,"POST","orders",OrderWorkflowApi.Creation("book-printing"),400,"ORDER_PDF_REQUIRED");
         var forged=OrderWorkflowApi.Creation("book-printing");forged["requiresPdf"]=false;forged["hasFile"]=true;
@@ -29,7 +29,7 @@ internal static class OrderWorkflowSqlScenarios
         checks.Check(original.Num("file_version")==1&&(await db.Read("SELECT COUNT(*) n FROM dbo.Files WHERE order_id=@p0",id))!.Num("n")==1,"SQL multipart idempotency creates exactly one immutable original PDF version");
         await FileAccess(api,originalId,OrderWorkflowFixtures.Pdf());
         await RollbackInitial(api);
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/open",new{});await api.Quote(id);await api.Accept(id);
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/open",new{});await api.Quote(id,9_876_543_210);await api.Accept(id);
         var accepted=await JsonSnapshot(db,"SELECT * FROM dbo.Order_Quotes WHERE order_id=@p0 ORDER BY revision FOR JSON PATH,INCLUDE_NULL_VALUES",id);
         var noFlag=await api.Command(id);noFlag["message"]="Missing explicit file requirement";
         await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",noFlag,400,"CORRECTION_PDF_FLAG_REQUIRED");
@@ -61,23 +61,21 @@ internal static class OrderWorkflowSqlScenarios
         var rejected=await JsonSnapshot(db,"SELECT * FROM dbo.Order_Corrections WHERE id=@p0 FOR JSON PATH,INCLUDE_NULL_VALUES",revision);
         await BothGates(api,id,"ORDER_CORRECTION_NOT_APPROVED");
         await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections/review",await api.Review(id),400);
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,false));
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true));
         var secondCycle=(await api.Detail(id))["corrections"]!.AsArray().Last()!["id"]!.ToString();
         var chosen=(await api.Upload(id,secondCycle,OrderWorkflowFixtures.Pdf("chosen approved")))["id"]!.ToString();
         var newer=(await api.Upload(id,secondCycle,OrderWorkflowFixtures.Pdf("newer unselected")))["id"]!.ToString();
-        await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.Submission(id,chosen));
+        await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.Submission(id,chosen),409,"CORRECTION_FILE_STALE");
+        await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.Submission(id,newer));
         await RollbackReview(api,id);
         var review=await api.Review(id);
         await Task.WhenAll(api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections/review",review),api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections/review",review));
         var ready=await api.Detail(id);
-        checks.Check(ready["productionReadiness"]!["canStart"]!.GetValue<bool>()&&ready["productionReadiness"]!["approvedFileId"]!.ToString()==chosen&&chosen!=newer,"SQL production readiness selects the explicitly approved PDF rather than the newest upload");
-        await api.Quote(id,9_876_543_210);
-        checks.Check(await JsonSnapshot(db,"SELECT * FROM dbo.Order_Quotes WHERE order_id=@p0 AND revision=1 FOR JSON PATH,INCLUDE_NULL_VALUES",id)==accepted,"changed bigint quote preserves the previously accepted quote byte-for-byte");
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/start-printing",await api.Command(id),409,"CUSTOMER_APPROVAL_REQUIRED");
-        var staleAcceptance=await api.Command(id);var oldQuote=JsonNode.Parse(accepted)![0]!;
-        staleAcceptance["quoteId"]=oldQuote["id"]!.ToString();staleAcceptance["quoteVersion"]=oldQuote["version"]!.GetValue<long>();
-        await api.Request(api.Customer,"POST","customer/orders/"+id+"/quote/accept",staleAcceptance,409,"QUOTE_STALE");
-        await api.Accept(id);
+        checks.Check(!ready["productionReadiness"]!["canStart"]!.GetValue<bool>()&&ready["productionReadiness"]!["approvedFileId"]!.ToString()==newer&&chosen!=newer,"SQL readiness identifies the latest reviewed PDF and still requires new terms");
+        var forbiddenQuote=await api.Command(id);forbiddenQuote["amountToman"]=500000;forbiddenQuote["scopeText"]="Replacement quote";
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/quotes",forbiddenQuote,409,"ACCEPTED_PRICE_IMMUTABLE");
+        checks.Check(await JsonSnapshot(db,"SELECT * FROM dbo.Order_Quotes WHERE order_id=@p0 ORDER BY revision FOR JSON PATH,INCLUDE_NULL_VALUES",id)==accepted,"attempted repricing preserves the accepted bigint quote byte-for-byte");
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/start-printing",await api.Command(id),409,"FINAL_TERMS_REQUIRED");
         checks.Check((await db.Read("SELECT final_price FROM dbo.Orders WHERE id=@p0",id))!.Num("final_price")==9_876_543_210,"latest customer acceptance persists a bigint toman amount without truncation");
         await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true));
         await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.Submission(id,chosen),409,"CORRECTION_NEW_PDF_REQUIRED");
@@ -85,6 +83,7 @@ internal static class OrderWorkflowSqlScenarios
         var file5=(await api.Upload(id,thirdCycle,OrderWorkflowFixtures.Pdf("last correction")))["id"]!.ToString();
         await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.Submission(id,file5));
         await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections/review",await api.Review(id));
+        await api.SignTerms(id);
         var key=(await db.Read("SELECT object_key FROM dbo.Files WHERE id=@p0",file5))!.Str("object_key");
         var storage=api.Fixtures.Storage;var bytes=await storage.ReadPdf(key);await using(var guard=db.Store()){await db.Guard(guard);storage.DeletePdf(key);}
         try{await api.Request(api.Administrator,"POST","admin/orders/"+id+"/start-printing",await api.Command(id),409,"ORDER_FILE_UNAVAILABLE");}
@@ -99,7 +98,7 @@ internal static class OrderWorkflowSqlScenarios
             await JsonSnapshot(db,"SELECT * FROM dbo.Order_Corrections WHERE id=@p0 FOR JSON PATH,INCLUDE_NULL_VALUES",revision)==rejected,"all five PDF versions and immutable rejected correction history survive later cycles");
         var publicDetail=await api.CustomerDetail(id);var json=publicDetail.ToJsonString();
         checks.Check(!json.Contains("object_key")&&!json.Contains("reviewed_by_admin")&&!json.Contains("submissionFingerprint"),"customer SQL projection never exposes private storage keys or administrator identity");
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,false),400);
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true),400);
         await Legacy(api);await FileLimit(api);
     }
     private static async Task BothGates(OrderWorkflowApi api,string id,string correctionCode)
@@ -112,25 +111,31 @@ internal static class OrderWorkflowSqlScenarios
     private static async Task Legacy(OrderWorkflowApi api)
     {
         var id=await api.Fixtures.LegacyOrder("review",null);
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,false));
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true));
         await BothGates(api,id,"ORDER_CORRECTION_REQUIRED");
-        await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.Submission(id));
+        await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.UploadSubmission(id));
         await BothGates(api,id,"ORDER_CORRECTION_REVIEW_REQUIRED");
         await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections/review",await api.Review(id,"reject","Clarify the title"));
         await BothGates(api,id,"ORDER_CORRECTION_NOT_APPROVED");
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,false));
-        await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.Submission(id));
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true));
+        await api.Request(api.Customer,"POST","customer/orders/"+id+"/corrections/submit",await api.UploadSubmission(id));
         await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections/review",await api.Review(id));
-        await api.Request(api.Administrator,"PATCH","admin/orders/"+id,new{version=await api.Version(id),status="printing",finalPrice=100});
-        api.Checks.Check((await api.Database.Read("SELECT status FROM dbo.Orders WHERE id=@p0",id))!.Str("status")=="printing","historical PATCH permits a valid optional-PDF legacy order after correction approval");
+        await api.Request(api.Administrator,"PATCH","admin/orders/"+id,new{version=await api.Version(id),status="printing",finalPrice=100},409,"CUSTOMER_APPROVAL_REQUIRED");
+        api.Checks.Check((await api.Database.Read("SELECT status FROM dbo.Orders WHERE id=@p0",id))!.Str("status")=="review","historical PATCH cannot bypass mandatory customer financial consent");
     }
     private static async Task FileLimit(OrderWorkflowApi api)
     {
-        var id=await api.Create();await api.Upload(id,bytes:new byte[15*1024*1024+1],expected:413);for(var n=0;n<3;n++)await api.Upload(id);
+        await api.Database.Write("UPDATE dbo.Rate_Limits SET expires=0 WHERE [key] LIKE 'upload:%'");
+        var id=await api.Create();await api.Upload(id,bytes:new byte[15*1024*1024+1],expected:413);for(var n=0;n<2;n++)await api.Upload(id);
         await Task.WhenAll(api.Upload(id),api.Upload(id));await api.Upload(id,expected:400);
         api.Checks.Check((await api.Database.Read("SELECT COUNT(*) n,COUNT(DISTINCT file_version) versions FROM dbo.Files WHERE order_id=@p0",id)) is {} row&&row.Num("n")==5&&row.Num("versions")==5,"SQL serialized concurrent uploads preserve the five-file limit and unique versions");
         await api.Request(api.Administrator,"POST","admin/orders/"+id+"/open",new{});
-        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true),409,"ORDER_FILE_LIMIT");
+        await api.Request(api.Administrator,"POST","admin/orders/"+id+"/corrections",await api.Correction(id,true));
+        var revision=(await api.Detail(id))["corrections"]!.AsArray().Last()!["id"]!.ToString();
+        for(var n=0;n<5;n++)await api.Upload(id,revision);
+        await api.Upload(id,revision,expected:400);
+        api.Checks.Check((await api.Database.Read("SELECT COUNT(*) n FROM dbo.Files WHERE order_id=@p0",id))!.Num("n")==10,
+            "five originals remain intact and the next correction has its own five-file budget");
     }
     private static async Task FileAccess(OrderWorkflowApi api,string file,byte[] bytes)
     {
