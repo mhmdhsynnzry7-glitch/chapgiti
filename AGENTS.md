@@ -561,3 +561,5 @@ A financial proposal contains the numeric toman amount and included scope. Owner
 - Use the locked server version for order actions. Replacing pending or previously accepted final terms requires an explicit revision and fresh customer consent. Retain previous consent and all file/quote histories.
 - User-facing errors are Persian. Preserve typed codes, correlation IDs and allowlisted private rolling diagnostics. Keep secrets, private filenames, payloads and customer identifiers out of logs.
 - Preview frontend changes at desktop, tablet and phone sizes. Run backend, SQL isolation, architecture, TypeScript, lint and browser verification before a development-branch push. A source push is independent of server deployment.
+
+- Customer ticket intake and later messages share attachment validation, private storage, ownership, ordered replay checks and rollback. Verify both general and order-linked creation with a real isolated SQL browser journey. Keep multipart requests and text-only JSON compatible.

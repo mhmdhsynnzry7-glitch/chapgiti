@@ -57,5 +57,6 @@ public sealed class CommittedUpdates(IRealtimeDispatcher dispatcher)
 
 public sealed class CommitAwareUnitOfWork(IUnitOfWork inner, CommittedUpdates updates) : IUnitOfWork
 {
+    public Task<T> ReadOnly<T>(Func<Task<T>> query) => inner.ReadOnly(query);
     public Task<T> Transaction<T>(Func<Task<T>> action) => updates.Transaction(() => inner.Transaction(action));
 }

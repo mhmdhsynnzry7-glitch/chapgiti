@@ -1,4 +1,5 @@
 import { normalizeDigits, type PrintSpec } from "@/lib/pricing";
+import { PrintCatalogProvider } from "@/components/print-catalog-provider";
 import PageIntro from "@/components/page-intro";
 import { OrderForm } from "@/components/forms";
 import { requireCustomerProfile } from "@/lib/customer";
@@ -73,11 +74,11 @@ export default async function Page({
         description="مشخصات کتاب را انتخاب و فایل چاپ را ارسال کنید. پس از ثبت، کد پیگیری دریافت می‌کنید و کارشناس درخواست شما را بررسی می‌کند."
         eyebrow="ثبت سفارش چاپ و نشر"
       />
-      <OrderForm
+      <PrintCatalogProvider><OrderForm
         initialSpec={initialSpec}
         initialOverrides={overrides}
         restoreDraft={p.draft === "1"}
-      />
+      /></PrintCatalogProvider>
     </div>
   );
 }

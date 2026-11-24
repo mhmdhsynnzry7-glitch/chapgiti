@@ -8,13 +8,40 @@ internal static class SupportAttachmentChecks
 {
     public static async Task Run(Action<bool,string> check, HttpClient owner, HttpClient admin, HttpClient outsider, HttpClient guest)
     {
-        var created = await owner.PostAsJsonAsync("/api/tickets", new {subject="پیوست آزمایشی",message="درخواست آزمایشی برای بررسی پیوست",idempotencyKey=Guid.NewGuid()});
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ipUgAAAAASUVORK5CYII=");
+        var prefix = "%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\n";
+        var pdf = System.Text.Encoding.ASCII.GetBytes(prefix+"xref\n0 2\n0000000000 65535 f \n0000000009 00000 n \ntrailer\n<< /Size 2 /Root 1 0 R >>\nstartxref\n"+prefix.Length+"\n%%EOF\n");
+        var initialKey = Guid.NewGuid().ToString();
+        async Task<HttpResponseMessage> Intake(HttpClient client, string name) {
+            using var form = new MultipartFormDataContent();
+            form.Add(new StringContent(initialKey), "idempotencyKey");
+            form.Add(new StringContent("پیوست آزمایشی"), "subject");
+            form.Add(new StringContent("درخواست آزمایشی برای بررسی پیوست"), "message");
+            form.Add(new ByteArrayContent(png), "files", "initial.png");
+            form.Add(new ByteArrayContent(pdf), "files", name);
+            return await client.PostAsync("/api/tickets/attachments", form);
+        }
+        using var anonymous = await Intake(guest,"sample.pdf");
+        check((int)anonymous.StatusCode==401,"unauthenticated initial attachment is rejected");
+        using var invalidIntake = await Intake(owner,"wrong.jpg");
+        check((int)invalidIntake.StatusCode==400,"invalid second initial file prevents the entire ticket");
+        using var created = await Intake(owner,"sample.pdf");
         created.EnsureSuccessStatusCode();
         var id = (await created.Content.ReadFromJsonAsync<JsonObject>())!["id"]!.ToString();
         var ticket = "/api/tickets/"+id;
         var adminTicket = "/api/admin/tickets/"+id;
+        using var initialReplay = await Intake(owner,"sample.pdf");
+        check((int)initialReplay.StatusCode==200 && (await initialReplay.Content.ReadFromJsonAsync<JsonObject>())!["id"]!.ToString()==id,
+            "lost initial response replays the original ticket");
+        using var renamed = await Intake(owner,"another.pdf");
+        check((int)renamed.StatusCode==409,"different initial file cannot reuse a ticket request");
+        var initial = (await admin.GetFromJsonAsync<JsonObject>(adminTicket))!["messages"]!.AsArray().Single()!["attachments"]!.AsArray();
+        check(initial.Count==2 && initial[0]!["name"]!.ToString()=="initial.png" && initial[1]!["name"]!.ToString()=="sample.pdf","first message retains the ordered image and PDF exactly once");
+        var initialUrl="/attachments/"+initial[1]!["id"];
+        check((await (await admin.GetAsync(adminTicket+initialUrl)).Content.ReadAsByteArrayAsync()).SequenceEqual(pdf),"admin downloads original initial PDF");
+        using var notOwned = await outsider.GetAsync(ticket+initialUrl);
+        check((int)notOwned.StatusCode==404,"initial attachments belong only to the owning customer or administrator");
         var key = Guid.NewGuid().ToString();
-        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ipUgAAAAASUVORK5CYII=");
         async Task<HttpResponseMessage> Post(HttpClient client,string path,string messageKey,string fileName,byte[] bytes,int count=1) {
             using var form = new MultipartFormDataContent();
             form.Add(new StringContent(messageKey),"idempotencyKey");

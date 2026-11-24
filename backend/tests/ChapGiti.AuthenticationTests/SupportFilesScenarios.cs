@@ -39,8 +39,21 @@ internal static class SupportFilesScenarios
             var image=host.Data.Assets.Values.First();
             form.Add(new ByteArrayContent(image),"files","نمونه.png");
             var aborted=await owner.PostAsync("/api/tickets/"+threadId+"/messages/attachments",form);
-            check(!aborted.IsSuccessStatusCode && host.Data.Assets.Count==fileCount && host.Data.MessagesById.Count==messageCount && host.Data.Attachments.Count==3,
+            check(!aborted.IsSuccessStatusCode && host.Data.Assets.Count==fileCount && host.Data.MessagesById.Count==messageCount && host.Data.Attachments.Count==5,
                   "rolled-back ticket transaction leaves no physical orphan, message or metadata");
+        }
+        var ticketCount=host.Data.Tickets.Count;
+        var metadataCount=host.Data.Attachments.Count;
+        host.Data.FailNextNotification=true;
+        using (var form=new MultipartFormDataContent()) {
+            form.Add(new StringContent(Guid.NewGuid().ToString()),"idempotencyKey");
+            form.Add(new StringContent("تیکت آزمایشی"),"subject");
+            form.Add(new StringContent("آزمون بازگشت ایجاد تیکت و پیوست"),"message");
+            form.Add(new ByteArrayContent(host.Data.Assets.Values.First()),"files","نمونه.png");
+            using var rejected=await owner.PostAsync("/api/tickets/attachments",form);
+            check(!rejected.IsSuccessStatusCode && host.Data.Tickets.Count==ticketCount && host.Data.MessagesById.Count==messageCount
+                  && host.Data.Assets.Count==fileCount && host.Data.Attachments.Count==metadataCount,
+                  "failed initial notification rolls back ticket, initial message, metadata and private bytes");
         }
         var directory=Path.Combine(Path.GetTempPath(),"chap-log-test-"+Guid.NewGuid().ToString("N"));
         host.App.Configuration["Storage:Root"]=directory;

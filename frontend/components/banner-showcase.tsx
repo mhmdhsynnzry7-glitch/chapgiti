@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowUpLeft, ArrowLeft, ChevronRight, ChevronLeft, Pause, Play, Calculator } from "lucide-react";
 import type { Banner } from "@/lib/banners";
@@ -24,7 +25,7 @@ export default function BannerShowcase({ banners }: { banners: Banner[] }) {
   return <section className="showcase-section"><div className="container showcase-grid">
     <div className={"hero-banner " + banner.theme} role="region" aria-roledescription="اسلایدشو" aria-label="بنرهای چاپ گیتی" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={() => setPaused(false)}>
       <div className="hero-banner-copy"><span className="hero-banner-tag">{banner.eyebrow}</span><h1>{banner.title}</h1><p>{banner.subtitle}</p>{banner.label && banner.link && <Link prefetch={false} className="button button-white" href={banner.link}>{banner.label}<ArrowUpLeft size={19} /></Link>}</div>
-      <img className="hero-banner-image" src={banner.image} alt={banner.kind === "portfolio" ? banner.eyebrow : ""} />
+      <Image width={1280} height={720} unoptimized loading="eager" className="hero-banner-image" src={banner.image} alt={banner.kind === "portfolio" ? banner.eyebrow : ""} />
       <div className="banner-controls">
         <div className="banner-arrows"><button type="button" onClick={() => move(-1)} aria-label="بنر قبلی"><ChevronRight size={19} /></button><button type="button" onClick={() => move(1)} aria-label="بنر بعدی"><ChevronLeft size={19} /></button></div>
         <div className="banner-dots">{banners.map((item, position) => <button type="button" key={item.id} className={position === index ? "active" : ""} aria-label={"نمایش بنر " + (position + 1)} aria-pressed={position === index} onClick={() => setIndex(position)} />)}</div>

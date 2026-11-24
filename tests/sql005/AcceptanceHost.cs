@@ -61,6 +61,13 @@ internal sealed class AcceptanceHost(WebApplication app) : IAsyncDisposable
             public bool IsEnabled(LogLevel level)=>level>=LogLevel.Error;
             public void Log<TState>(LogLevel level,EventId id,TState state,Exception? error,Func<TState,Exception?,string> formatter) {
                 if(level>=LogLevel.Error&&error!=null)Console.WriteLine("TEST_API_EXCEPTION="+error.GetType().Name+(error is Microsoft.Data.SqlClient.SqlException sql?" SQL_NUMBER="+sql.Number:""));
+                if(error is Microsoft.Data.SqlClient.SqlException { Number:1205 })
+                {
+                    var frames=new System.Diagnostics.StackTrace(error).GetFrames();
+                    var trace=frames.Select(frame=>frame.GetMethod()?.DeclaringType?.FullName)
+                        .Where(name=>name?.StartsWith("ChapGiti.",StringComparison.Ordinal)==true);
+                    Console.WriteLine("SQL_DEADLOCK_CALLS="+string.Join(" -> ",trace));
+                }
             }
         }
     }

@@ -55,3 +55,15 @@ tr[data-attention] td:first-child {box-shadow:inset -3px 0 #b8502c;}
 .filterbar :is(input,select,button) {max-inline-size:100%;min-block-size:2.75rem}
 .filterbar .search-input {flex:1 1 12rem;min-inline-size:0}
 @media(max-width:650px){.filterbar {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.filterbar .search-input{grid-column:1/-1}.filterbar :is(select,input){width:100%;min-inline-size:0}}
+
+.ticket-attachments { display:grid; gap:.45rem; min-width:0; }
+.ticket-drop { display:grid; gap:.5rem; padding:.85rem; border:1px dashed var(--line, #a5b1b2); border-radius:.5rem; }
+.ticket-drop.dragging, .ticket-drop:focus-within { border-color:var(--teal, #246678); }
+.ticket-picker { position:relative; justify-self:start; display:inline-flex; align-items:center; min-height:2.75rem; padding:0 .9rem; border:1px solid currentColor; border-radius:.5rem; color:var(--ink, #193b49); font-weight:600; }
+.ticket-picker input { position:absolute; inset:0; margin:0; opacity:0; width:100%; height:100%; cursor:pointer; }
+.ticket-picker:has(input:focus-visible) { outline:2px solid var(--teal, #246678); outline-offset:3px; }
+.ticket-picker:has(input:disabled) { opacity:.65; }
+.ticket-file-list { display:grid; gap:.4rem; padding:0; margin:.25rem 0; list-style:none; }
+.ticket-file-list li { display:flex; align-items:center; justify-content:space-between; gap:.65rem; }
+.ticket-file-list li span { min-width:0; overflow-wrap:anywhere; }
+.ticket-file-list button { flex:none; padding:.25rem .6rem; border:1px solid var(--line, #a5b1b2); border-radius:.4rem; background:transparent; color:inherit; font:inherit; cursor:pointer; }

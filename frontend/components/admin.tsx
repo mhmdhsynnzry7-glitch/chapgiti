@@ -96,6 +96,7 @@ export default function AdminApp({
   initialOverview?: OverviewResult;
   initialOrder?: AdminOrderDetailData;
 }) {
+  const router = useRouter();
   const [mobile, setMobile] = useState(false);
   const [collapsed,setCollapsed]=useState(false);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(
@@ -145,7 +146,7 @@ export default function AdminApp({
             <ExternalLink size={15} />
             مشاهده وب‌سایت
           </a>
-          <button type="button" className="text-link" onClick={async () => { const r = await sessionFetch("/api/auth/logout", { method: "POST" }); if (r.ok) window.location.assign("/admin/login"); }}>
+          <button type="button" className="text-link" onClick={async () => { const r = await sessionFetch("/api/auth/logout", { method: "POST" }); if (r.ok) { router.replace("/admin/login"); router.refresh(); } }}>
             <LogOut size={15} />
             خروج از حساب
           </button>

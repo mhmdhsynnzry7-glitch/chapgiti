@@ -197,6 +197,16 @@ internal static class EfActivationAcceptance
                     using var outsider = host.Client();
                     await checks.Request(outsider,"POST","customer/login",new{ phone=OrderWorkflowFixtures.OtherPhone,password=OrderWorkflowFixtures.Password });
                     await ChapGiti.Acceptance.SupportAttachmentChecks.Run(checks.Check, customer, admin, outsider, guest);
+                    await using (var store=database.Store())
+                    {
+                        await database.Guard(store);
+                        var metadata=await store.Query("SELECT id,digest FROM dbo.Ticket_Attachments ORDER BY id");
+                        var folder=Path.Combine(fixtures.StorageRoot,"ticket-files");
+                        var disk=Directory.GetFiles(folder).OrderBy(Path.GetFileName,StringComparer.Ordinal).ToArray();
+                        checks.Check(disk.Select(Path.GetFileName).SequenceEqual(metadata.Select(f=>f.Str("id")),StringComparer.OrdinalIgnoreCase)
+                            && disk.Zip(metadata).All(pair => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(pair.First))).Equals(pair.Second.Str("digest"),StringComparison.OrdinalIgnoreCase)),
+                            "every SQL ticket attachment resolves to its exact private bytes and no unreferenced files remain");
+                    }
                     await FinalAgreementAcceptance.Run(checks,host,admin,customer,option["id"]!.ToString());
                 }
             }
@@ -331,9 +341,9 @@ internal static class EfActivationAcceptance
         start.ArgumentList.Add(Artifacts);
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Cannot start SQL-backed activation browser.");
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
-        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(100)); }
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(4)); }
         catch { if (!process.HasExited) process.Kill(entireProcessTree: true); throw; }
         await File.WriteAllTextAsync(Path.Combine(Artifacts, "sql-browser.log"), await output + await error);
-        checks.Check(process.ExitCode == 0, "real SQL -> EF/API -> Next customer catalog and magazine browser acceptance succeeds");
+        checks.Check(process.ExitCode == 0, "real SQL -> EF/API -> Next registration, order, revisions, initial ticket attachments, catalog and magazine succeed");
     }
 }

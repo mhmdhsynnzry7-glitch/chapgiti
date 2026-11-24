@@ -129,6 +129,12 @@ try{
   const elapsedMs=Date.now()-started;const after=await processStats();result.load.push({concurrency,elapsedMs,before,after,samples,aborted});save();console.log('LOAD concurrency='+concurrency+' requests='+samples.length+' non200='+samples.filter(r=>r.status!==200).length);if(aborted)break;
  }
  }
+ if (process.argv.includes('--load-only') && result.load.length) {
+  // One customer login in setup uses the first slot in the 15-request window.
+  const logins=result.load.flatMap(batch=>batch.samples).filter(sample=>sample.name==='password-login');
+  check(logins.length===40 && logins.filter(sample=>sample.status===200).length===14 &&
+    logins.filter(sample=>sample.status===429).length===26, 'the isolated login limiter counts every concurrent request exactly once');
+ }
  if(result.load.length)check(result.load.every(batch=>!batch.aborted&&batch.samples.every(sample=>sample.status===200||sample.status===429)),'controlled traffic has no unexpected HTTP errors');
  if(process.argv.includes('--final')){
   await stop(api);

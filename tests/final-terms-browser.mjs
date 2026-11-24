@@ -48,7 +48,7 @@ export async function acceptFinalConditions(admin, customer, base, orderId) {
   const issuedAgain=admin.waitForResponse(r=>r.request().method()==="POST" && r.url().endsWith("/delivery-terms"));
   await admin.getByRole("button",{name:"ثبت اصلاح و درخواست تأیید دوباره"}).click();
   assert.equal((await issuedAgain).status(),200);assert.equal((await attempt("start-printing")).status(),409);
-  await customer.reload();await customer.getByText("تحویل در محل دوم",{exact:true}).waitFor();
+  await customer.reload();await customer.getByRole("definition").filter({hasText:/^تحویل در محل دوم$/}).filter({visible:true}).first().waitFor();
   const confirmed=customer.waitForResponse(r=>r.request().method()==="POST" && r.url().endsWith("/delivery-terms/accept"));
   await customer.getByRole("button",{name:"تأیید نهایی و ثبت توافق"}).click();assert.equal((await confirmed).status(),200);
   await admin.reload();

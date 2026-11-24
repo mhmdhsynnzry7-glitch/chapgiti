@@ -17,7 +17,8 @@ import type { TicketThreadResult } from "@/lib/api-contracts";
 import { ticketStatuses, type TicketMessage } from "@/lib/tickets";
 import { connectRealtime } from "@/lib/realtime-client";
 import { uniqueById } from "@/lib/realtime-connection";
-import { ticketTime } from "@/lib/tickets";
+import TicketAttachments from "./ticket-attachments";
+import { defaultTicketLimits, ticketTime } from "@/lib/tickets";
 
 export default function TicketThread({
   initial,
@@ -32,7 +33,7 @@ export default function TicketThread({
     [error, setError] = useState("");
   const [requestKey, setRequestKey] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const limits = data.attachmentLimits ?? {count:3, bytes:4*1024*1024};
+  const limits = data.attachmentLimits ?? defaultTicketLimits;
   const sending = useRef(false);
   const router = useRouter();
   const path = (admin ? "admin/tickets/" : "tickets/") + data.ticket.id;
@@ -238,17 +239,8 @@ export default function TicketThread({
               }}
             />
           </label>
-          <label className="field">افزودن پیوست
-            <small>PDF، JPG، PNG یا WebP · حداکثر {limits.count.toLocaleString("fa-IR")} فایل، هر فایل {Math.ceil(limits.bytes/1024).toLocaleString("fa-IR")} کیلوبایت</small>
-            <input type="file" multiple disabled={busy} accept=".pdf,.jpeg,.jpg,.png,.webp" onChange={event=>{
-              const next=[...files,...Array.from(event.target.files ?? [])];
-              event.target.value="";
-              if(next.length>limits.count) {setError("تعداد فایل‌ها بیش از حد مجاز است.");return;}
-              if(next.some(f=>!f.size || f.size>limits.bytes)) {setError("حجم پیوست معتبر نیست.");return;}
-              setFiles(next);setRequestKey("");setError("");
-            }}/>
-          </label>
-          {!!files.length && <ul>{files.map((file,i)=><li key={i}>{file.name} · {Math.ceil(file.size/1024).toLocaleString("fa-IR")} کیلوبایت <button type="button" disabled={busy} aria-label={"حذف "+file.name} onClick={()=>{setFiles(files.filter((_,j)=>i!==j));setRequestKey("");setError("");}}>حذف</button></li>)}</ul>}
+          <TicketAttachments label="افزودن پیوست" files={files} limits={limits} disabled={busy}
+            onChange={next => { setFiles(next); setRequestKey(""); setError(""); }} />
           <button className="button" disabled={busy} aria-busy={busy}>
             <Send size={17} />
             {busy ? "در حال ارسال…" : requestKey && error ? "تلاش دوباره برای ارسال" : "ارسال پاسخ"}

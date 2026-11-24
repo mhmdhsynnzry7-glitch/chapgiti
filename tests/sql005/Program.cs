@@ -8,6 +8,7 @@ using ChapGiti.Infrastructure.Security;
 using Microsoft.Data.SqlClient;
 using ChapGiti.SqlAcceptanceTests;
 
+if(args is ["--authorize-disposable-release-smoke",var extracted]) return await PackagedReleaseAcceptance.Run(extracted);
 if(args.Length==1&&args[0]=="--authorize-disposable-ef-scaffold")return await ScaffoldEfSchema.Run();
 if(args.Length==1&&args[0]=="--authorize-disposable-ef-contract")return await ScaffoldEfSchema.Run(metadataOnly:true);
 if(args.Length==1&&args[0]=="--authorize-disposable-ef-modernization")return await EfModernizationAcceptance.Run();

@@ -37,7 +37,8 @@ EF Core 10.0.15 is primary persistence. SQL001–009 remain immutable; explicit 
 cd C:\src\chapgiti\backend
 dotnet build .\ChapGiti.slnx
 
-$env:ConnectionStrings__SqlServer='Server=.;Database=ChapGiti;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;'
+if (-not $env:SQLSERVER_CONNECTION_STRING) { throw 'Load the private SQL setting for this installation first.' }
+$env:ConnectionStrings__SqlServer = $env:SQLSERVER_CONNECTION_STRING
 $env:Storage__Root='C:\src\chapgiti\data'
 $env:Site__Url='http://127.0.0.1:3000'
 $env:ASPNETCORE_URLS='http://127.0.0.1:5100'

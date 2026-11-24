@@ -13,6 +13,8 @@ public sealed class TicketsController(TicketService tickets) : ApiControllerBase
     [HttpPost("tickets")]
     [HttpPost("contact")]
     public async Task<IResult> Create(JsonObject body) => Respond(await tickets.Create(body));
+    [HttpPost("tickets/attachments"), RequestSizeLimit(16*1024*1024)]
+    public async Task<IResult> CreateWithFiles() => Respond(await TicketForm.Create(Request, tickets));
     [HttpGet("tickets/{id:guid}")]
     public async Task<IResult> Get(string id) => Respond(await tickets.Get(id));
     [HttpPost("tickets/{id:guid}/read")]

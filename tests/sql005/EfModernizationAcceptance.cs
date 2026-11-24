@@ -15,7 +15,7 @@ internal static class EfModernizationAcceptance
         foreach(var upgrade in new[]{false,true})
         {
             await using var database=new IsolatedDatabase(express2025);await database.Create();
-            var engine = await database.Read("SELECT CONVERT(nvarchar(128),SERVERPROPERTY('ProductVersion')) engine_version, compatibility_level FROM sys.databases WHERE name=DB_NAME()");
+            var engine = await database.Read("SELECT CONVERT(nvarchar(128),SERVERPROPERTY('ProductVersion')) engine_version, compatibility_level FROM sys.databases WHERE name=DB_NAME()") ?? throw new InvalidOperationException("Required SQL acceptance row was missing.");
             Console.WriteLine($"SQL_ENGINE={engine!.Str("engine_version")} COMPATIBILITY_LEVEL={engine.Num("compatibility_level")} SCENARIO={(upgrade ? "upgrade" : "fresh")}");
             foreach(var file in Directory.GetFiles("backend/ChapGiti.Infrastructure/Persistence/Migrations","*.sql").Order())database.Stage(Path.GetFileName(file));
             await database.Migrate();var fixtures=new OrderWorkflowFixtures(database);
@@ -40,10 +40,10 @@ internal static class EfModernizationAcceptance
                 await LegacyEfMigrations.Apply(db);
             }
             checks.Check((await database.Read("SELECT COUNT(*) n FROM dbo.Schema_Migrations"))!.Num("n")==9,"EF adoption preserves all nine legacy history records");
-            checks.Check((await database.Read("SELECT COUNT(*) n FROM dbo.__EFMigrationsHistory"))!.Num("n")==2,"validated baseline and additive catalog/magazine migration use separate EF history");
+            checks.Check((await database.Read("SELECT COUNT(*) n FROM dbo.__EFMigrationsHistory WHERE MigrationId IN('20261117090230_Legacy009Baseline','20261117092337_CatalogAndMagazine')"))!.Num("n")==2,"validated baseline and additive catalog/magazine migration use separate EF history");
             checks.Check((await database.Read("SELECT COUNT(*) n FROM dbo.Print_Catalog_Options"))!.Num("n")==80,"all 80 existing print options transfer without invented rates");
             checks.Check((await database.Read("SELECT COUNT(*) n FROM dbo.Print_Catalog_Options WHERE is_default=1 AND active=1"))!.Num("n")==8,"every catalog group has one active default");
-            if(upgrade){var old=await database.Read("SELECT content,publication_status,published_at,public_author_name FROM dbo.Articles WHERE id=@p0",articleId);checks.Check(old!.Str("content")==legacyBody&&old.Str("publication_status")=="published"&&old["published_at"]==null&&old["public_author_name"]==null,"upgrade preserves content/publication without inventing historical author/date");}
+            if(upgrade){var old=await database.Read("SELECT content,publication_status,published_at,public_author_name FROM dbo.Articles WHERE id=@p0",articleId) ?? throw new InvalidOperationException("Required SQL acceptance row was missing.");checks.Check(old!.Str("content")==legacyBody&&old.Str("publication_status")=="published"&&old["published_at"]==null&&old["public_author_name"]==null,"upgrade preserves content/publication without inventing historical author/date");}
             var before=(await database.Read("SELECT (SELECT * FROM dbo.__EFMigrationsHistory ORDER BY MigrationId FOR JSON PATH) history"))!.Str("history");
             await using(var db=database.Store()){await database.Guard(db);await LegacyEfMigrations.Apply(db);}
             checks.Check((await database.Read("SELECT (SELECT * FROM dbo.__EFMigrationsHistory ORDER BY MigrationId FOR JSON PATH) history"))!.Str("history")==before,"migration rerun preserves exact EF history");
@@ -51,7 +51,7 @@ internal static class EfModernizationAcceptance
             {
                 var export=new JsonObject{["articles"]=new JsonArray(new JsonObject{["id"]=Guid.NewGuid().ToString(),["slug"]="legacy-imported",["title"]="Imported historical article",["excerpt"]="Imported actual historical excerpt",["content"]="Imported historical content that must remain unchanged.",["category"]="Import",["published"]=1,["seo_title"]="",["seo_description"]="",["created_at"]="2025-01-01T00:00:00.000Z",["updated_at"]="2025-01-01T00:00:00.000Z"})}.ToJsonString();
                 await using var import=database.Store();await database.Guard(import);await ChapGiti.Infrastructure.Persistence.Importer.Apply(import,export);await ChapGiti.Infrastructure.Persistence.Importer.Apply(import,export);
-                var imported=await database.Read("SELECT publication_status,published_at,public_author_name FROM dbo.Articles WHERE slug='legacy-imported'");
+                var imported=await database.Read("SELECT publication_status,published_at,public_author_name FROM dbo.Articles WHERE slug='legacy-imported'") ?? throw new InvalidOperationException("Required SQL acceptance row was missing.");
                 checks.Check(imported!.Str("publication_status")=="published"&&imported["published_at"]==null&&imported["public_author_name"]==null,"legacy article import remains compatible after EF adoption without invented dates/authors");
                 checks.Check((await database.Read("SELECT COUNT(*) n FROM dbo.Import_History"))!.Num("n")==1,"legacy import retry is idempotent after EF activation");
             }
@@ -90,8 +90,15 @@ internal static class EfModernizationAcceptance
             checks.Check(competing.Select(r=>(int)r.StatusCode).Order().SequenceEqual(new[]{200,409}),"concurrent real SQL catalog edits permit exactly one writer");foreach(var response in competing)response.Dispose();
             checks.Check((await database.Read("SELECT label FROM dbo.Print_Catalog_Options WHERE id=@p0",row["id"]!.ToString()))!.Str("label")=="SQL renamed format","catalog update is durable and stale edits are rejected");
             var invalid=row.DeepClone().AsObject();invalid["code"]="unsupported-mode";invalid["kind"]="textPrints";invalid["pricingRule"]="invented-technology";await checks.Request(admin,"POST","admin/print-catalog",invalid,400);
-            var spec=new{pages=120,quantity=100,size="raghi",paper="white",color="bw",binding="soft"};var quote=await checks.Request(anon,"POST","quote",spec);checks.Check(quote["total"]!.GetValue<long>()>0,"EF-backed pricing retains authoritative supported formulas");
-            var request=await checks.Request(customer,"POST","orders",new{title="EF SQL request",service="book-printing",spec,idempotencyKey=Guid.NewGuid().ToString()},201);
+            var tariffPath="admin/print-tariffs/"+row["id"];
+            var tariff=await checks.Request(admin,"GET",tariffPath);
+            await checks.Request(admin,"PUT",tariffPath,new{version=tariff["version"],rates=tariff["rates"],approveProposal=true});
+            var spec=new{pages=120,quantity=100,size="raghi",paper="white",color="bw",binding="soft"};await checks.Request(anon,"POST","quote",spec,401);var quote=await checks.Request(customer,"POST","quote",spec);checks.Check(quote["total"]!.GetValue<long>()>0,"EF-backed pricing retains authoritative supported formulas");
+            var intake=OrderWorkflowApi.Creation("book-printing");intake["termsAccepted"]=true;intake["spec"]=System.Text.Json.JsonSerializer.SerializeToNode(spec);
+            using var content=OrderWorkflowApi.Multipart(intake,OrderWorkflowFixtures.Pdf());
+            using var submitted=await customer.PostAsync("/api/orders",content);
+            checks.Check((int)submitted.StatusCode==201,"authenticated order with a real PDF and approved tariff is created");
+            var request=(await submitted.Content.ReadFromJsonAsync<JsonObject>())!;
             var saved=await database.Read("SELECT spec FROM dbo.Orders WHERE id=@p0",request["id"]!.ToString());checks.Check(JsonNode.Parse(saved!.Str("spec"))!["catalogSnapshot"]!["options"]!.AsArray().Any(i=>i!["label"]!.ToString()=="SQL renamed format"),"new order captures catalog identities/versions/labels");
             await checks.Request(admin,"GET","admin/users");await checks.Request(customer,"GET","customer/orders");await checks.Request(admin,"GET","admin/overview");
             var article=new JsonObject{["slug"]="ef-magazine",["title"]="EF magazine test title",["excerpt"]="A synthetic magazine summary for isolated acceptance.",["content"]="## Safe heading\n\nSynthetic article content sufficiently long for publication.",["category"]="Print",["status"]="draft",["coverAssetId"]="",["coverAlt"]="",["authorName"]="",["seoTitle"]="",["seoDescription"]=""};

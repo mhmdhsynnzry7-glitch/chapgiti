@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { ticketReleaseBrowser } from "./ticket-release-browser.mjs";
 import { spawn } from "node:child_process";
 import {
   createWriteStream,
@@ -181,6 +182,7 @@ try {
     browserErrors.length === 0,
     "SQL-backed customer catalog and magazine pages have no browser runtime errors",
   );
+  await ticketReleaseBrowser({browser,base,check,artifacts:artifactRoot});
   writeFileSync(
     artifactRoot + "/sql-browser-result.json",
     JSON.stringify(

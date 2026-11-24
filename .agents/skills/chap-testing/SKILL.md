@@ -63,3 +63,5 @@ Current modernization additionally requires EF mapping/baseline/history and fres
 Follow the current workflow and support rules in root AGENTS.md. Automated tests use isolated data and mocked delivery. Apply reviewed Development migrations only through the guarded project runner after target verification and a verified backup. Publish editorial content in Development only when the owner authorizes it through the existing administrator API.
 
 - Use isolated identities for two-browser term revisions, lost responses and stale approvals. Compare persisted file metadata and bytes on replay and rollback. Exercise the actual public magazine pages after authorized Development publication.
+
+- Exercise initial multi-file ticket creation and file replies for both conversation types through independent browser sessions backed by disposable SQL. Compare file bytes, unread state and retry outcomes. Use the isolated OTP transport for registration.
