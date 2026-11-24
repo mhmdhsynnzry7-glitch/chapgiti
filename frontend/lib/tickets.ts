@@ -1,5 +1,5 @@
 export const ticketStatuses: Record<string, string> = {
-  open: "در انتظار پاسخ پشتیبانی", awaiting_customer: "منتظر پاسخ مشتری", closed: "بسته‌شده",
+  open: "باز", awaiting_customer: "منتظر پاسخ مشتری", closed: "بسته‌شده",
 };
 export type Ticket = {
   id: string; subject: string; status: string; created_at: string; updated_at: string; name?: string; phone?: string;
@@ -9,4 +9,4 @@ export type Ticket = {
 };
 export type TicketPage = { readOnly?:boolean; items: Ticket[]; total: number; page: number; pageSize: number; orderLinksAvailable: boolean };
 export const ticketTime = (value: string) => new Date(value).toLocaleString("fa-IR", { timeZone: "Asia/Tehran" });
-export type TicketMessage = { id: string; actor: string; message: string; created_at: string; read_at?: string | null };
+export type TicketMessage = { id: string; actor: string; message: string; created_at: string; read_at?: string | null; attachments?: {id:string;name:string;size:number;mime:string}[] };

@@ -49,3 +49,9 @@ tr[data-attention] td:first-child {box-shadow:inset -3px 0 #b8502c;}
   .inbox-filters {align-items:stretch;}
   .ticket-bubble {max-inline-size:95%;}
 }
+
+.customer-header-link span {min-width:0;max-inline-size:clamp(6rem,12vw,13rem);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filterbar {align-items:center;flex-wrap:wrap;gap:.65rem}
+.filterbar :is(input,select,button) {max-inline-size:100%;min-block-size:2.75rem}
+.filterbar .search-input {flex:1 1 12rem;min-inline-size:0}
+@media(max-width:650px){.filterbar {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.filterbar .search-input{grid-column:1/-1}.filterbar :is(select,input){width:100%;min-inline-size:0}}

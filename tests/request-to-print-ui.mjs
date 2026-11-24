@@ -87,7 +87,32 @@ export async function requestToPrintChecks({browser,page,base,check,control,cust
     customer.once('dialog',dialog=>dialog.accept());await customer.getByRole('button',{name:'تأیید قیمت',exact:true}).click();await customer.locator('.customer-quote-actions:visible').waitFor({state:'hidden'});
     detail=(await api(customer,'GET','customer/orders/'+id)).body;
     check(detail.order.status==='confirmed'&&detail.order.final_price===250000&&!detail.events.some(e=>e.status==='printing'),'UAT-09 acceptance aligns the approved price and queue without starting printing');
-    await acceptFinalConditions(page,customer,base,id);check(true,'accepted price is locked and the server rejects production before explicit acceptance of final file and conditions');const start=page.getByRole('button',{name:'شروع چاپ',exact:true});await start.waitFor();page.once('dialog',dialog=>dialog.accept());await start.click();
+    // The isolated memory journey also exercises two independent administrator browser sessions.
+    if (control) {
+      const peerContext=await browser.newContext();
+      try {
+        await peerContext.route('**/*',route=>route.request().url().startsWith(base+'/')?route.continue():route.abort());
+        const peer=await peerContext.newPage();
+        const orderPath='/admin/orders/'+id;
+        await peer.goto(base+'/admin/login?next='+encodeURIComponent(orderPath));
+        await peer.locator('input[name=password]').fill(password);
+        await peer.getByRole('button',{name:'ورود به مدیریت',exact:true}).click();
+        await peer.waitForURL(base+orderPath);
+        await peer.getByText('تنظیم شرایط نهایی',{exact:true}).click();
+        await peer.getByLabel('شرایط تحویل',{exact:true}).fill('شرایط آزمایشی از نشست دوم');
+        await acceptFinalConditions(page,customer,base,id);
+        const stale=peer.waitForResponse(r=>r.request().method()==='POST' && r.url().endsWith('/delivery-terms'));
+        await peer.getByRole('button',{name:'ارسال شرایط نهایی برای تأیید مشتری'}).click();
+        const response=await stale;
+        assert.equal(response.status(),409);
+        assert.equal((await response.json()).code,'ORDER_VERSION_CONFLICT');
+        await peer.locator('.delivery-conditions').getByRole('definition').filter({hasText:'تحویل در محل دوم'}).waitFor();
+        check(true,'stale second administrator browser cannot overwrite a signed revision and refreshes to the winning conditions');
+      } finally { await peerContext.close(); }
+    } else {
+      await acceptFinalConditions(page,customer,base,id);
+    }
+    check(true,'accepted price is locked and the server rejects production before explicit acceptance of final file and conditions');const start=page.getByRole('button',{name:'شروع چاپ',exact:true});await start.waitFor();page.once('dialog',dialog=>dialog.accept());await start.click();
     await page.getByRole('button',{name:'پایان چاپ و ارسال به صحافی',exact:true}).waitFor();check(true,'UAT-11 only the separate administrator action starts production');
     for(const name of ['پایان چاپ و ارسال به صحافی','پایان صحافی و آماده تحویل','ثبت تحویل سفارش']) {
       page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name,exact:true}).click();

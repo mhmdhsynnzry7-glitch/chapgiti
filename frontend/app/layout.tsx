@@ -1,3 +1,4 @@
+import PersianFormValidation from "@/components/persian-form-validation";
 import type { Metadata } from "next";
 import "./globals.css";
 import "./workflow.css";
@@ -18,6 +19,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body>
+        <PersianFormValidation />
         <a className="skip-link" href="#main">
           رفتن به محتوای اصلی
         </a>

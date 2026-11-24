@@ -2,7 +2,7 @@ import { publicServices, origin, indexed } from "@/lib/server";
 import { backendApi } from "@/lib/backend";
 export const dynamic = "force-dynamic";
 export async function GET() {
-  const services = await publicServices();
+  const services = indexed() ? await publicServices() : [];
   const articles = indexed()
     ? await backendApi<{ slug: string; updatedAt: string }[]>(
         "public/magazine/sitemap",
@@ -12,9 +12,7 @@ export async function GET() {
     ? [
         "",
         "/services",
-        "/calculator",
         "/contact",
-        "/privacy",
         "/blog",
         ...articles.map((article) => "/blog/" + article.slug),
         ...services.map((s) => "/services/" + s.slug),

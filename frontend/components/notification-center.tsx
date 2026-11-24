@@ -113,19 +113,19 @@ export function NotificationProvider({ scope, children }: { scope: NotificationS
   return <NotificationContext.Provider value={{ scope, base, summary, error: failure?.message || "", expired: !!failure && [401,403].includes(failure.status), revision, refresh, read, busy, realtimeState }}>{children}</NotificationContext.Provider>;
 }
 
-function NotificationList({ compact = false }: { compact?: boolean }) {
+function NotificationList() {
   const center = useCenter();
   const [page, setPage] = useState(1), [retry, setRetry] = useState(0), [actionError, setActionError] = useState("");
-  const key = [center.base, compact ? 1 : page, compact ? 5 : 20, center.revision, retry].join(":");
+  const key = [center.base, page, 5, center.revision, retry].join(":");
   const [resource, setResource] = useState<{ key: string; data: NotificationPage | null; error: string } | null>(null);
   useEffect(() => {
     if (center.expired) return;
     const controller = new AbortController();
-    request<NotificationPage>(center.base + "?page=" + (compact ? 1 : page) + "&pageSize=" + (compact ? 5 : 20), "GET", controller.signal)
+    request<NotificationPage>(center.base + "?page=" + (page) + "&pageSize=" + (5), "GET", controller.signal)
       .then(data => { if (!controller.signal.aborted) setResource({ key, data, error: "" }); })
       .catch(cause => { if (!controller.signal.aborted) setResource({ key, data: null, error: cause instanceof NotificationError ? cause.message : "ارتباط با مرکز اعلان برقرار نشد. دوباره تلاش کنید." }); });
     return () => controller.abort();
-  }, [key, center.base, center.expired, compact, page]);
+  }, [key, center.base, center.expired, page]);
   const current = resource?.key === key;
   const data = current && !center.expired ? resource.data : null;
   const error = center.expired ? center.error : current ? resource.error : "";
@@ -136,19 +136,19 @@ function NotificationList({ compact = false }: { compact?: boolean }) {
       await center.read(id);
     } catch (cause) { setActionError(cause instanceof NotificationError ? cause.message : "خوانده‌شدن اعلان ذخیره نشد. دوباره تلاش کنید."); }
   }
-  return <div className={"notification-list " + (compact ? "compact" : "")}>
+  return <div className="notification-list compact">
     <div className="notification-tools">
       <button type="button" className="text-link" onClick={() => { void read(); }} disabled={center.busy || center.expired || !center.summary?.unreadCount}><CheckCheck size={16} aria-hidden="true" />خواندن همه</button></div>
     {actionError && <p role="alert" className="error-message">{actionError}</p>}
     {center.error && !error && <p className="notification-warning" role="status">{center.error}</p>}
     {!current && !center.expired && <p role="status" className="notification-state">در حال دریافت اعلان‌ها…</p>}
-    {error && <div className="notification-state error-message" role="alert"><p>{error}</p>{center.expired ? <Link prefetch={false} href={center.scope === "admin" ? "/admin/login?next=/admin/notifications" : "/customer?next=/account/notifications"}>ورود دوباره</Link> : <button type="button" className="text-link" onClick={retryList}>تلاش دوباره</button>}</div>}
+    {error && <div className="notification-state error-message" role="alert"><p>{error}</p>{center.expired ? <Link prefetch={false} href={center.scope === "admin" ? "/admin/login?next=/admin" : "/customer?next=/account"}>ورود دوباره</Link> : <button type="button" className="text-link" onClick={retryList}>تلاش دوباره</button>}</div>}
     {data && <>{data.items.length ? <ul className="notification-items">{uniqueById(data.items).map((item: NotificationItem) => <li key={item.id} data-notification-id={item.id} className={"notification-item " + (item.readAt ? "is-read" : "is-unread")}>
       <div className="notification-open">
         <strong>{item.title}</strong><span>{item.body}</span>{item.orderCode && <span>کد سفارش <bdi>{item.orderCode}</bdi></span>}<span className="notification-meta"><time dateTime={item.createdAt}>{notificationTime(item.createdAt)}</time><span>{item.readAt ? "خوانده‌شده" : "خوانده‌نشده"}</span></span>
       </div>{!item.readAt && <button type="button" className="notification-read icon-button" aria-label={"خواندن اعلان: " + item.title} title="علامت‌گذاری به‌عنوان خوانده‌شده" disabled={center.busy} onClick={() => { void read(item.id); }}><Check size={18} aria-hidden="true" /></button>}
     </li>)}</ul> : <p className="notification-state">هنوز اعلانی ندارید.</p>}
-      {!compact && <Pagination page={page} pageSize={data.pageSize} total={data.total} noun="اعلان" onPageChange={setPage} />}</>}
+      {data.total > data.pageSize && <Pagination page={page} pageSize={data.pageSize} total={data.total} noun="اعلان" onPageChange={setPage} />}</>}
   </div>;
 }
 
@@ -159,15 +159,10 @@ export function NotificationBell() {
   return <Popover open={open} onOpenChange={setOpen}><PopoverTrigger asChild><button type="button" className="notification-bell icon-button" aria-label={title + (count ? "، " + count.toLocaleString("fa-IR") + " خوانده‌نشده" : "")}>
     <Bell size={21} aria-hidden="true" />{count > 0 && <bdi className="notification-badge" aria-hidden="true">{count > 99 ? "99+" : count.toLocaleString("fa-IR")}</bdi>}
     <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{center.error || (center.summary ? count.toLocaleString("fa-IR") + " اعلان خوانده‌نشده" : "در حال دریافت شمار اعلان‌ها")}</span>
-  </button></PopoverTrigger><PopoverContent className="notification-popover" align="end" dir="rtl" aria-labelledby={titleId} collisionPadding={12}>
-    <div className="notification-heading"><h2 id={titleId}>{title}</h2><Link prefetch={false} href={center.scope === "admin" ? "/admin/notifications" : "/account/notifications"} onClick={() => setOpen(false)}>مشاهده همه</Link></div>
-    <NotificationList compact />
+  </button></PopoverTrigger><PopoverContent className="notification-popover" data-realtime-state={center.realtimeState} align="end" dir="rtl" aria-labelledby={titleId} collisionPadding={12}>
+    <div className="notification-heading"><h2 id={titleId}>{title}</h2></div>
+    <NotificationList />
   </PopoverContent></Popover>;
-}
-
-export function NotificationCenter() {
-  const center = useCenter();
-  return <section className="panel notification-center" aria-label="فهرست اعلان‌ها" data-realtime-state={center.realtimeState}><NotificationList /></section>;
 }
 
 export function NavigationBadge({kind,label}:{kind:"orders"|"notifications"|"support";label:string}) {

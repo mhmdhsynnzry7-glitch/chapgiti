@@ -43,11 +43,22 @@ export function ensureSession(context: SessionContext = "customer"): Promise<boo
 }
 
 export async function sessionFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  let response = await fetch(url, options);
+  async function request() {
+    try {return await fetch(url, options);}
+    catch (error) {
+      if (options.signal?.aborted) throw error;
+      throw new Error("ارتباط با سرور برقرار نشد. دوباره تلاش کنید.");
+    }
+  }
+  let response = await request();
   if (response.status === 401 && !/\/(?:login|logout|password\/)/.test(url) &&
-    await ensureSession(/^\/api\/(?:admin|auth)(?:\/|$)/.test(url) ? "administrator" : "customer")) response = await fetch(url, options);
+    await ensureSession(/^\/api\/(?:admin|auth)(?:\/|$)/.test(url) ? "administrator" : "customer")) response = await request();
   if (response.ok && !["GET", "HEAD"].includes((options.method || "GET").toUpperCase()) &&
     /^\/api\/(?:orders(?:\/|$)|tickets(?:\/|$)|contact$|customer\/orders\/|admin\/(?:orders|tickets)(?:\/|$))/.test(url) &&
     typeof window !== "undefined" && typeof window.dispatchEvent === "function") window.dispatchEvent(new Event("chap:notifications-refresh"));
+  if (response.status === 409 && typeof window !== "undefined") {
+    const id = url.match(/^\/api\/(?:admin|customer)\/orders\/([a-f0-9-]{36})(?:\/|$)/)?.[1];
+    if (id) window.dispatchEvent(new CustomEvent("chap:order-conflict",{detail:id}));
+  }
   return response;
 }

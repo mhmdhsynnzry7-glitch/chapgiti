@@ -12,7 +12,7 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
   await context.route("**/api/realtime/**", route => route.fulfill({status:503,json:{error:"isolated realtime outage"}}));
   const customer = await context.newPage(), errors = [];
   customer.on("pageerror", error => errors.push(error.message));
-  const center = target => target.locator(".notification-center");
+  const center = target => target.locator(".notification-popover");
   const bell = target => target.getByRole("button", { name: /^اعلان‌ها/ });
   async function api(target, method, route, body) {
     return target.evaluate(async ({ method, route, body }) => {
@@ -25,6 +25,7 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
     assert.fail(label);
   }
   async function ready(target) {
+    if (!await center(target).isVisible()) await bell(target).click();
     await center(target).waitFor();
     await until(() => center(target).innerText(), text => !text.includes("در حال دریافت اعلان‌ها"), "notification list finishes loading");
   }
@@ -38,9 +39,9 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
     await customer.goto(base + "/");
     check(await customer.locator(".notification-bell").count() === 0, "guest header does not fabricate a customer notification inbox");
     await customer.goto(base + "/account/notifications"); await customer.locator("input[name=phone]").waitFor();
-    check(new URL(customer.url()).searchParams.get("next") === "/account/notifications", "notification page requires customer login and preserves its safe return route");
+    check(new URL(customer.url()).searchParams.get("next") === "/account", "notification page requires customer login and preserves its safe return route");
     await customer.locator("input[name=phone]").fill(customerPhone); await customer.locator("input[name=password]").fill(password);
-    await customer.locator("form").getByRole("button", { name: "ورود", exact: true }).click(); await customer.waitForURL("**/account/notifications"); await ready(customer);
+    await customer.locator("form").getByRole("button", { name: "ورود", exact: true }).click(); await customer.waitForURL("**/account"); await ready(customer);
     check(await bell(customer).isVisible(), "authenticated customer header exposes the independent notification bell");
     const empty = async route => route.fulfill({ status: 200, json: { items: [], total: 0, page: 1, pageSize: 20 } });
     await customer.route("**/api/customer/notifications?*", empty); await customer.reload(); await ready(customer);
@@ -55,17 +56,18 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
     await customer.unroute("**/api/customer/notifications**", offline);
     await center(customer).getByRole("button", { name: "تلاش دوباره", exact: true }).click(); await ready(customer);
     check(!(await center(customer).innerText()).includes("دریافت یا ذخیرهٔ اعلان انجام نشد"), "retry recovers notification reads without reloading business state");
-    await admin.goto(base + "/admin/notifications"); await ready(admin);
+    await admin.goto(base + "/admin"); await ready(admin);
     const newNotice = await notice(admin, "admin", id, "order.created");
     check(await center(admin).locator('[data-notification-id="' + newNotice.id + '"]').isVisible(), "committed request appears in the persistent administrator inbox");
     const beforeOpen = (await summary(admin, "admin")).unreadCount;
-    await bell(admin).click(); await admin.locator(".notification-popover .notification-item").first().waitFor();
-    check(await admin.locator(".notification-popover").getByRole("link", { name: "مشاهده همه", exact: true }).isVisible() && (await summary(admin, "admin")).unreadCount === beforeOpen, "opening short dropdown exposes view-all and leaves unread states unchanged");
+    await admin.keyboard.press("Escape"); await bell(admin).click(); await admin.locator(".notification-popover .notification-item").first().waitFor();
+    check(await admin.locator(".notification-popover").getByRole("link", { name: "مشاهده همه", exact: true }).count() === 0 && (await summary(admin, "admin")).unreadCount === beforeOpen, "opening the notification popover omits separate-page navigation and leaves unread states unchanged");
     await admin.keyboard.press("Escape");
     check(await bell(admin).evaluate(element => element === document.activeElement), "Escape closes notification dropdown and restores keyboard focus");
+    await ready(admin);
     const openRequest = center(admin).locator('[data-notification-id="' + newNotice.id + '"] .notification-read');
     const readResponse = admin.waitForResponse(response => response.url().endsWith("/" + newNotice.id + "/read") && response.request().method() === "POST");
-    await openRequest.click(); assert.equal((await readResponse).status(), 200); assert.equal(new URL(admin.url()).pathname, "/admin/notifications"); await admin.goto(base + "/admin/orders/" + id);
+    await openRequest.click(); assert.equal((await readResponse).status(), 200); assert.equal(new URL(admin.url()).pathname, "/admin"); await admin.goto(base + "/admin/orders/" + id);
     await admin.getByRole("button", { name: "ارسال پیشنهاد قیمت", exact: true }).waitFor();
     check(true, "marking an administrator notification read preserves location; order details open separately");
     const detail = (await api(admin, "GET", "admin/orders/" + id)).body;
@@ -94,10 +96,10 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
     await customer.route("**/api/customer/notifications/*/read", failedRead);
     await center(customer).locator('[data-notification-id="' + quoteNotice.id + '"] .notification-read').click();
     await center(customer).getByRole("alert").waitFor();
-    check(new URL(customer.url()).pathname === "/account/notifications" && (await notice(customer, "customer", id, "quote.issued")).readAt === null, "failed read-one cannot navigate or falsely mark the notification read");
+    check(new URL(customer.url()).pathname === "/account" && (await notice(customer, "customer", id, "quote.issued")).readAt === null, "failed read-one cannot navigate or falsely mark the notification read");
     await customer.unroute("**/api/customer/notifications/*/read", failedRead);
     await center(customer).locator('[data-notification-id="' + quoteNotice.id + '"] .notification-read').click(); await until(() => notice(customer, "customer", id, "quote.issued"), row => !!row.readAt, "read is persisted");
-    assert.equal(new URL(customer.url()).pathname, "/account/notifications"); await customer.goto(base + "/account/orders/" + id);
+    assert.equal(new URL(customer.url()).pathname, "/account"); await customer.goto(base + "/account/orders/" + id);
     await customer.getByRole("button", { name: "تأیید قیمت", exact: true }).waitFor();
     check(true, "customer can separately open their quote after reading its notification");
     customer.once("dialog", dialog => dialog.accept()); await customer.getByRole("button", { name: "تأیید قیمت", exact: true }).click();
@@ -118,16 +120,16 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
     await until(() => Promise.resolve(actionRefreshes), value => value > 0, "successful business action triggers notification refresh"); admin.off("request", afterAction);
     check(actionRefreshes > 0, "successful administrator actions trigger a notification refresh independently of the poll timer");
     const printingNotice = await notice(customer, "customer", id, "order.printing");
-    await customer.goto(base + "/account/notifications"); await ready(customer);
+    await customer.goto(base + "/account"); await ready(customer);
     await center(customer).locator('[data-notification-id="' + printingNotice.id + '"] .notification-read').click();
     await until(() => notice(customer, "customer", id, "order.printing"), row => !!row.readAt, "read-one persists");
     await customer.reload(); await ready(customer);
     check(await center(customer).locator('[data-notification-id="' + printingNotice.id + '"].is-read').isVisible(), "read-without-opening survives refresh with a persistent read timestamp");
     const {archiveTicketId:ticket}=await control({seedArchivedTicketFor:customerPhone});
     const archiveNotice=await notice(customer,"customer",ticket,"ticket.message");
-    await customer.goto(base+"/account/notifications");await ready(customer);
+    await customer.goto(base+"/account");await ready(customer);
     await center(customer).locator('[data-notification-id="'+archiveNotice.id+'"] .notification-open').click();
-    assert.equal(new URL(customer.url()).pathname, "/account/notifications");
+    assert.equal(new URL(customer.url()).pathname, "/account");
     await customer.goto(base+"/tickets/"+ticket);await customer.locator(".ticket-thread").waitFor();
     check(await customer.locator('.ticket-bubble.admin').count()===1,"prior support messages are accessible by opening the authorized thread");
     const paginationOrder=(await submitPrintRequest(customer,base,{idempotencyKey:crypto.randomUUID(),title:"Notification pagination",spec})).body.id;
@@ -136,14 +138,14 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
       const state=(await api(admin,"GET","admin/orders/"+paginationOrder)).body;
       assert.equal((await api(admin,"POST","admin/orders/"+paginationOrder+"/quotes",{idempotencyKey:crypto.randomUUID(),expectedVersion:state.order.version,amountToman:100000+n,scopeText:"Synthetic quote revision",deliveryTerms:"",exclusionsText:""})).status,200);
     }
-    await customer.goto(base + "/account/notifications"); await ready(customer);
-    check(await center(customer).locator(".notification-item").count() === 20, "notification center uses server pagination with twenty entries per page");
+    await customer.goto(base + "/account"); await ready(customer);
+    check(await center(customer).locator(".notification-item").count() === 5, "notification popover uses server pagination with five entries per page");
     const firstIds = await center(customer).locator(".notification-item").evaluateAll(items => items.map(item => item.dataset.notificationId));
     await center(customer).getByRole("button", { name: "صفحه بعد", exact: true }).click(); await ready(customer);
     const secondIds = await center(customer).locator(".notification-item").evaluateAll(items => items.map(item => item.dataset.notificationId));
     check(secondIds.length > 0 && !secondIds.some(id => firstIds.includes(id)), "RTL next-page action fetches a distinct persistent page without duplicates");
     const sibling = await context.newPage(); sibling.on("pageerror", error => errors.push(error.message));
-    await sibling.goto(base + "/account/notifications"); await ready(sibling);
+    await sibling.goto(base + "/account"); await ready(sibling);
     await until(() => sibling.locator(".notification-badge").count(), value => value === 1, "second tab loads unread badge");
     const administratorUnread = (await summary(admin, "admin")).unreadCount;
     await center(customer).getByRole("button", { name: "خواندن همه", exact: true }).click();
@@ -154,16 +156,16 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
     check(await center(sibling).locator(".notification-item.is-unread").count() === 0, "read-all state survives refresh in a separate tab");
     await sibling.close();
     for (const [target, scope] of [[customer, "customer"], [admin, "admin"]]) {
-      await target.goto(base + (scope === "customer" ? "/account/notifications" : "/admin/notifications")); await ready(target);
+      await target.goto(base + (scope === "customer" ? "/account" : "/admin")); await ready(target);
       await target.addScriptTag({ path: "frontend/node_modules/axe-core/axe.min.js" });
-      const violations = await target.evaluate(async () => (await window.axe.run(".notification-center", { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] } })).violations.map(row => ({ id: row.id, targets: row.nodes.map(node => node.target) })));
+      const violations = await target.evaluate(async () => (await window.axe.run(".notification-popover", { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] } })).violations.map(row => ({ id: row.id, targets: row.nodes.map(node => node.target) })));
       assert.deepEqual(violations, []); check(true, scope + " notification center passes automated accessibility checks");
       await target.screenshot({ path: ".qa/notifications/" + scope + "-desktop.png", fullPage: true, animations: "disabled" });
       for (const width of [360, 768, 1440]) {
         await target.setViewportSize({ width, height: 900 });
         check(await target.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), scope + " notification layout avoids horizontal overflow at " + width + "px");
       }
-      await target.setViewportSize({ width: 360, height: 844 }); await bell(target).click(); await target.locator(".notification-popover .notification-item").first().waitFor();
+      await target.setViewportSize({ width: 360, height: 844 }); await ready(target); await target.locator(".notification-popover .notification-item").first().waitFor();
       const box = await target.locator(".notification-popover").boundingBox();
       check(box.x >= 0 && box.x + box.width <= 361, scope + " dropdown fits a small RTL mobile viewport");
       await target.addScriptTag({ path: "frontend/node_modules/axe-core/axe.min.js" });
@@ -176,8 +178,8 @@ export async function notificationChecks({ browser, page: admin, base, check, cu
     check(await center(customer).getByRole("link", { name: "ورود دوباره", exact: true }).isVisible() && await customer.locator(".notification-badge").count() === 0, "403 clears stale private unread data and offers the correct customer login");
     await customer.unroute("**/api/customer/notifications**", forbidden);
     await api(customer, "POST", "customer/logout");
-    await customer.goto(base + "/customer?change=1&next=/account/notifications"); await customer.locator("input[name=phone]").fill(customerPhone); await customer.locator("input[name=password]").fill(password);
-    await customer.locator("form").getByRole("button", { name: "ورود", exact: true }).click(); await customer.waitForURL("**/account/notifications"); await ready(customer);
+    await customer.goto(base + "/customer?change=1&next=/account"); await customer.locator("input[name=phone]").fill(customerPhone); await customer.locator("input[name=password]").fill(password);
+    await customer.locator("form").getByRole("button", { name: "ورود", exact: true }).click(); await customer.waitForURL("**/account"); await ready(customer);
     check(await center(customer).locator(".notification-item.is-unread").count() === 0, "persistent read states remain after logout and a new customer login");
     check(errors.length === 0, "notification browser journeys have no runtime JavaScript errors");
   } finally {

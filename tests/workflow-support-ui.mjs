@@ -90,7 +90,7 @@ export async function workflowSupportChecks({ page, base, check,control }) {
   await page.getByLabel("از تاریخ (میلادی)").fill("2099-01-01");await page.getByText("موردی برای نمایش پیدا نشد.",{exact:true}).waitFor();check(true,"activity date filter has an honest empty state");
   await page.goto(base+"/admin/sms");await page.getByRole("heading",{name:"گزارش پیامک‌های سفارش",exact:true}).waitFor();check(true,"legacy SMS log route remains functional independently of customer activity");
   await page.goto(base+"/contact");check(await page.locator("main form, main textarea").count()===0 && await page.locator('main a[href="/tickets"]').count()===0,"contact is informational with no ticket creation entry point");
-  await page.goto(base+"/blog");await page.getByRole("heading",{name:"مجله چاپ گیتی",exact:true}).waitFor();check(true,"restored magazine stays independent from the retired support mutations and active calculator");
+  await page.goto(base+"/blog");await page.getByRole("heading",{name:"مجله چاپ گیتی",exact:true}).waitFor();check(true,"public magazine remains available alongside active support and the calculator");
   await page.goto(base+"/calculator");check(await page.locator(".book-calculator").count()>0 || await page.getByRole("heading").filter({hasText:"محاسبه"}).count()>0,"main calculator remains available");
   await page.goto(base+"/admin/customers");await page.setViewportSize({width:1024,height:768});
   check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"admin customer directory fits a tablet viewport");await page.setViewportSize({width:1440,height:1000});

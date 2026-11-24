@@ -12,7 +12,7 @@ export async function realtimeChecks({browser,page:admin,base,check,control}) {
   await outsiderContext.route("**/*",route=>route.request().url().startsWith(base)?route.continue():route.abort());
   const outsider=await outsiderContext.newPage();
   for(const target of [admin,customer,outsider])target.on("pageerror",error=>errors.push(error.message));
-  const center=target=>target.locator(".notification-center:visible");
+  const center=target=>target.locator(".notification-popover:visible");
   async function api(target,method,path,body,expected=200){
     const result=await target.evaluate(async({method,path,body})=>{
       const response=await fetch("/api/"+path,{method,headers:{"Content-Type":"application/json"},...(body?{body:JSON.stringify(body)}:{})});
@@ -26,6 +26,7 @@ export async function realtimeChecks({browser,page:admin,base,check,control}) {
     assert.fail(label);
   }
   async function connected(target,selector){
+    if (selector===center && !await center(target).isVisible()) await target.locator(".notification-bell").click();
     await until(()=>selector(target).getAttribute("data-realtime-state").then(value=>value==="connected"),"SignalR establishes its authorized subscription",20000);
   }
   async function notice(target,scope,entityId,eventType){
@@ -33,14 +34,14 @@ export async function realtimeChecks({browser,page:admin,base,check,control}) {
     return list.items.find(item=>item.entityId===entityId&&item.eventType===eventType);
   }
   try{
-    await admin.reload();await customer.goto(base+"/account/notifications");
+    await admin.reload();await customer.goto(base+"/account");
     await connected(admin,center);await connected(customer,center);
     check(true,"realtime browser negotiates a fallback transport when the proxy cannot upgrade WebSocket");
     const cookieNames=(await context.cookies()).map(cookie=>cookie.name);
     check(cookieNames.includes("giti_customer_access")&&cookieNames.includes("giti_admin_access"),"realtime browser keeps customer/admin authentication independent in the same browser");
-    await outsider.goto(base+"/customer?change=1&next=/account/notifications");
+    await outsider.goto(base+"/customer?change=1&next=/account");
     await outsider.locator("input[name=phone]").fill("09100000000");await outsider.locator("input[name=password]").fill("Old.Test.Password@1");
-    await outsider.locator("form").getByRole("button",{name:"ورود",exact:true}).click();await outsider.waitForURL("**/account/notifications");
+    await outsider.locator("form").getByRole("button",{name:"ورود",exact:true}).click();await outsider.waitForURL("**/account");await connected(outsider,center);
     const requestKey=crypto.randomUUID(),creation={idempotencyKey:requestKey,title:"SignalR browser request",spec:{pages:120,quantity:1,size:"raghi",paper:"white",color:"bw",binding:"soft"}};
     // Raw REST calls intentionally do not fire the frontend's local refresh event.
     const created = await submitPrintRequest(customer, base, creation);
@@ -87,7 +88,7 @@ export async function realtimeChecks({browser,page:admin,base,check,control}) {
     let item=await newQuote(240000);await until(()=>center(customer).locator('[data-notification-id="'+item.id+'"]').isVisible(),"notification delivery resumes after reconnect");
     check(true,"actual notification transport loss reconnects and restores the correct recipient subscription");
     const unavailable=r=>r.fulfill({status:503,json:{error:"isolated realtime outage"}});await customer.route("**/api/realtime/**",unavailable);
-    await customer.reload();await until(()=>center(customer).getAttribute('data-realtime-state').then(v=>v==='offline'),"unavailable hub leaves HTTP reads usable",12000);
+    await customer.reload();await customer.locator('.notification-bell').click();await until(()=>center(customer).getAttribute('data-realtime-state').then(v=>v==='offline'),"unavailable hub leaves HTTP reads usable",12000);
     item=await newQuote(260000);await until(()=>center(customer).locator('[data-notification-id="'+item.id+'"]').isVisible(),"polling recovers persisted notifications during transport outage",25000);
     check(true,"complete realtime outage retains the lightweight HTTP notification polling fallback");
     await customer.unroute("**/api/realtime/**",unavailable);await customer.evaluate(()=>window.dispatchEvent(new Event('online')));await connected(customer,center);

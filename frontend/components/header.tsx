@@ -30,7 +30,7 @@ export default function Header({ brand, customerName, hasCustomerAccount }: { br
           </nav>
           <div className="header-actions">
             {hasCustomerAccount && <NotificationBell />}
-            <NavLink exact={!!customerName} href={customerName ? "/account" : "/customer"} match={customerName ? ["/account","/customer/profile","/account/notifications"] : "/customer"} className="customer-header-link" label={customerName ? "حساب کاربری" : "ورود"}>
+            <NavLink exact={!!customerName} href={customerName ? "/account" : "/customer"} match={customerName ? ["/account","/customer/profile"] : "/customer"} className="customer-header-link" label={customerName ? "حساب کاربری " + customerName : "ورود"} title={customerName}>
               <UserRound size={21} /><span>{customerName || "ورود"}</span>
             </NavLink>
             <NavLink href="/order" className="button button-sm">

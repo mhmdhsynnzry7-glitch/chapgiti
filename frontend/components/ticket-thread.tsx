@@ -1,4 +1,5 @@
 "use client";
+import { responseData } from "@/lib/api-error";
 import { sessionFetch } from "@/lib/session-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +31,8 @@ export default function TicketThread({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [requestKey, setRequestKey] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const limits = data.attachmentLimits ?? {count:3, bytes:4*1024*1024};
   const sending = useRef(false);
   const router = useRouter();
   const path = (admin ? "admin/tickets/" : "tickets/") + data.ticket.id;
@@ -38,13 +41,11 @@ export default function TicketThread({
       if (!admin) return customerApi(path + suffix, options);
       const response = await sessionFetch("/api/" + path + suffix, {
         ...options,
-        headers: { "Content-Type": "application/json" },
+        headers: options.body instanceof FormData ? {} : {"Content-Type":"application/json"},
       });
-      const result = await response.json();
       if (response.status === 401)
         router.replace("/admin/login?next=/admin/tickets");
-      if (!response.ok) throw new Error(result.error || "درخواست انجام نشد.");
-      return result;
+      return responseData(response);
     },
     [admin, path, router],
   );
@@ -109,10 +110,15 @@ export default function TicketThread({
     try {
       const idempotencyKey = requestKey || createRequestId();
       setRequestKey(idempotencyKey);
-      await request("/messages", {
-        method: "POST",
-        body: JSON.stringify({ message, idempotencyKey }),
-      });
+      if (files.length) {
+        const form = new FormData();
+        form.set("message",message); form.set("idempotencyKey",idempotencyKey);
+        for (const file of files) form.append("files",file);
+        await request("/messages/attachments",{method:"POST",body:form});
+      } else {
+        await request("/messages",{method:"POST",body:JSON.stringify({message,idempotencyKey})});
+      }
+      setFiles([]);
       setMessage("");
       setRequestKey("");
       await refresh().catch(()=>setError("پیام ثبت شد. برای دریافت نسخهٔ تازهٔ گفت‌وگو، صفحه را تازه کنید."));
@@ -199,7 +205,10 @@ export default function TicketThread({
                 {ticketTime(item.created_at)}
               </time>
             </div>
-            <p>{item.message}</p>
+            {item.message && <p>{item.message}</p>}
+            {!!item.attachments?.length && <ul>{item.attachments.map(file=><li key={file.id}>
+              <a href={"/api/"+path+"/attachments/"+file.id} download>{file.name}</a> · {Math.ceil(file.size/1024).toLocaleString("fa-IR")} کیلوبایت
+            </li>)}</ul>}
           </article>
         ))}
       </div>
@@ -218,8 +227,8 @@ export default function TicketThread({
             <textarea
               name="reply"
               disabled={busy}
-              required
-              minLength={2}
+              required={!files.length}
+              minLength={files.length ? 0 : 2}
               maxLength={5000}
               rows={4}
               value={message}
@@ -229,7 +238,18 @@ export default function TicketThread({
               }}
             />
           </label>
-          <button className="button" disabled={busy}>
+          <label className="field">افزودن پیوست
+            <small>PDF، JPG، PNG یا WebP · حداکثر {limits.count.toLocaleString("fa-IR")} فایل، هر فایل {Math.ceil(limits.bytes/1024).toLocaleString("fa-IR")} کیلوبایت</small>
+            <input type="file" multiple disabled={busy} accept=".pdf,.jpeg,.jpg,.png,.webp" onChange={event=>{
+              const next=[...files,...Array.from(event.target.files ?? [])];
+              event.target.value="";
+              if(next.length>limits.count) {setError("تعداد فایل‌ها بیش از حد مجاز است.");return;}
+              if(next.some(f=>!f.size || f.size>limits.bytes)) {setError("حجم پیوست معتبر نیست.");return;}
+              setFiles(next);setRequestKey("");setError("");
+            }}/>
+          </label>
+          {!!files.length && <ul>{files.map((file,i)=><li key={i}>{file.name} · {Math.ceil(file.size/1024).toLocaleString("fa-IR")} کیلوبایت <button type="button" disabled={busy} aria-label={"حذف "+file.name} onClick={()=>{setFiles(files.filter((_,j)=>i!==j));setRequestKey("");setError("");}}>حذف</button></li>)}</ul>}
+          <button className="button" disabled={busy} aria-busy={busy}>
             <Send size={17} />
             {busy ? "در حال ارسال…" : requestKey && error ? "تلاش دوباره برای ارسال" : "ارسال پاسخ"}
           </button>

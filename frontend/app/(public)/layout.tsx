@@ -17,7 +17,7 @@ export default async function PublicLayout({
   const content = (
     <>
       {jar.has("giti_customer_refresh") && <SessionRenewal />}
-      <Header brand={site.brand} customerName={customerIsReady(customer) ? customer.firstName : undefined} hasCustomerAccount={customerIsReady(customer)} />
+      <Header brand={site.brand} customerName={customerIsReady(customer) ? [customer.firstName.trim(), customer.lastName.trim()].filter(Boolean).join(" ") : undefined} hasCustomerAccount={customerIsReady(customer)} />
       <PrintCatalogProvider><main id="main">{children}</main></PrintCatalogProvider>
       <Footer site={site} />
     </>

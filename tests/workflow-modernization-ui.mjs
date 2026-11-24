@@ -146,12 +146,16 @@ export async function workflowModernizationChecks({page, browser, base, check, c
       [page,"account","/account",t=>t.locator(".customer-orders tbody tr").first().waitFor(),true],[page,"calculator","/calculator",t=>t.locator(".book-calculator").waitFor(),true],
       [page,"request","/order"],[page,"my-orders","/account/orders",t=>t.locator("tbody tr").first().waitFor(),true],
       [page,"order","/account/orders/"+order.id],[page,"files","/account/orders/"+order.id+"#order-files"],[page,"support","/tickets"],
-      [page,"conversation","/tickets/"+ticketId,t=>t.locator(".ticket-bubble").first().waitFor(),true],[page,"notifications","/account/notifications"],
+      [page,"conversation","/tickets/"+ticketId,t=>t.locator(".ticket-bubble").first().waitFor(),true],[page,"notifications","/account",async t=>{await t.locator(".notification-bell").click();await t.locator(".notification-popover").waitFor();}],
       [page,"admin","/admin"],[page,"admin-orders","/admin/orders"],[page,"tariffs","/admin/settings",tariff,true],
       [page,"catalog","/admin/print-settings"],[page,"customers","/admin/customers"],[page,"magazine","/admin/articles"],[page,"settings","/admin/settings"]
     ];
     for(const args of views) await inspect(...args);
     await page.goto(base+"/account/orders/"+order.id);
+    const profile=await (await page.request.get(base+"/api/customer/me")).json();
+    const fullName=[profile.firstName,profile.lastName].filter(Boolean).join(" ");
+    const profileLink=page.locator(".customer-header-link");
+    check(profile.firstName && profile.lastName && await profileLink.getAttribute("title")===fullName && (await profileLink.innerText()).includes(fullName),"header displays both parts of the authenticated customer name");
     await checkCurrent(page,"#giti-main-nav","/account/orders");
     check(await page.locator('#giti-main-nav a[aria-current="page"]').getAttribute("href")==="/account/orders","nested customer order highlights its parent navigation item");
     await page.goto(base+"/admin/orders/"+order.id);
@@ -165,5 +169,17 @@ export async function workflowModernizationChecks({page, browser, base, check, c
     await page.getByText("ثبت نشده / ثبت نشده",{exact:true}).waitFor();
     check(true,"an incomplete historical specification displays its missing page and copy counts without inventing values");
     check(await adminMenu.locator('[aria-current="page"]').count()===1,"administrator detail highlights only the order parent");
+    const filtered="/admin/orders?oldestFirst=true&pageSize=10";
+    await page.goto(base+"/admin/orders/"+order.id+"?oldestFirst=true&pageSize=10");
+    await adminMenu.getByRole("link",{name:"سفارش‌ها",exact:false}).click();
+    await page.waitForURL(base+filtered);
+    const rowAction=page.locator("tbody tr").first().getByRole("button").last();
+    await rowAction.click();
+    await page.waitForURL(url=>url.pathname.startsWith("/admin/orders/") && url.searchParams.get("pageSize")==="10");
+    const selected=page.url();
+    await page.reload(); await page.locator(".timeline").waitFor();
+    await page.goBack(); await page.waitForURL(base+filtered);
+    await page.goForward(); await page.waitForURL(selected);
+    check(true,"orders sidebar, selection, refresh, Back and Forward preserve list filters");
   } finally {await guest.close();}
 }

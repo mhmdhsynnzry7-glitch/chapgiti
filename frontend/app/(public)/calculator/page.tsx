@@ -1,10 +1,7 @@
 import PageIntro from "@/components/page-intro";
 import BookCalculator from "@/components/book-calculator";
 import { requireCustomerProfile } from "@/lib/customer";
-import { seo } from "@/lib/seo";
-export async function generateMetadata() {
-  return seo("محاسبه آنلاین هزینه چاپ کتاب", "محاسبه جزئی هزینه چاپ متن، کاغذ، جلد، صحافی و خدمات تکمیلی کتاب.", "/calculator");
-}
+export const metadata = { title:"محاسبه آنلاین هزینه چاپ کتاب", robots:{index:false,follow:false} };
 export default async function Page() {
   const customer = await requireCustomerProfile("/calculator");
   return <div className="container page-body advanced-calculator-page">
