@@ -17,6 +17,26 @@ const command=String.raw`$ErrorActionPreference='Stop'; $count=0; foreach($file 
 const parsed=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',command],{encoding:'utf8',windowsHide:true});
 check(parsed.status===0,'deployment PowerShell parses; generated GitiNode and customized legacy XML agree on identity, arguments, storage and working directory');
 check(Number(parsed.stdout.trim())>=11,'all existing installation and maintenance PowerShell files were parsed without executing them');
+const upgradeGuide = readFileSync('docs/UPGRADE-CUT-TARIFFS-FA.md', 'utf8');
+const blocks = [...upgradeGuide.matchAll(/^```powershell[ \t]*\r?\n([\s\S]*?)^```[ \t]*\r?$/gm)].map(match => match[1].trim());
+const parseGuide = String.raw`
+  $ErrorActionPreference = 'Stop'
+  [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
+  $blocks = ConvertFrom-Json -InputObject ([Console]::In.ReadToEnd())
+  foreach ($block in $blocks) {
+    $tokens = $null
+    $errors = $null
+    [void][Management.Automation.Language.Parser]::ParseInput($block, [ref]$tokens, [ref]$errors)
+    if ($errors.Count) { throw $errors[0].Message }
+  }
+`;
+const guideSyntax = spawnSync('powershell.exe', ['-NoProfile','-NonInteractive','-Command',parseGuide],
+  {input:JSON.stringify(blocks),encoding:'utf8',windowsHide:true});
+check(blocks.length > 0 && guideSyntax.status === 0, 'every PowerShell block in the upgrade guide parses without execution');
+check(new Set(blocks).size === blocks.length, 'the manual upgrade sequence contains no duplicated PowerShell blocks');
+const shaGuard = "$expectedCommit -notmatch '^[0-9a-fA-F]{40}$'";
+check(blocks.filter(block => block.includes(shaGuard) && block.includes('$manifest.source.gitRevision -ne $expectedCommit')).length === 1,
+  'the manual upgrade verifies the supplied full SHA against the release manifest');
 const rendered=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File','tests/iis-routing.ps1'],{encoding:'utf8',windowsHide:true});
 assert.equal(rendered.status,0,rendered.stderr);
 for(const line of rendered.stdout.trim().split(/\r?\n/)){check(line.startsWith('PASS '),line.slice(5));}
