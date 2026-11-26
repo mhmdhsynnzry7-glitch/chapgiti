@@ -1,3 +1,4 @@
+import { checkQuoteSummary } from "./customer-estimate-ui.mjs";
 import assert from "node:assert/strict";
 import {mkdirSync,writeFileSync} from "node:fs";
 import path from "node:path";
@@ -126,8 +127,9 @@ export async function workflowModernizationChecks({page, browser, base, check, c
     const reestimate=page.waitForResponse(r=>r.request().method()==="POST" && r.url().endsWith("/api/quote"));
     await page.locator(".catalog-trigger").first().click();
     await page.getByRole("option").filter({hasText:"وزیری"}).first().click();
-    check((await reestimate).ok(),"changing a cut after estimation automatically calls the authenticated quote API");
-    await page.locator(".price-summary").getByText(/وزیری/).waitFor();
+    const updatedQuote = await reestimate;
+    check(updatedQuote.ok(),"changing a cut after estimation automatically calls the authenticated quote API");
+    await checkQuoteSummary(page, await updatedQuote.json(), check);
     check((await page.locator(".price-summary strong").innerText())!==previous,"the new cut replaces the old estimate");
     await page.route("**/api/quote",r=>r.fulfill({status:401,json:{error:"نشست منقضی"}}));
     await page.getByRole("button",{name:"محاسبه هزینه",exact:true}).click();

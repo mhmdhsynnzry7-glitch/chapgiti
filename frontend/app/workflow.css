@@ -50,7 +50,6 @@ tr[data-attention] td:first-child {box-shadow:inset -3px 0 #b8502c;}
   .ticket-bubble {max-inline-size:95%;}
 }
 
-.customer-header-link span {min-width:0;max-inline-size:clamp(6rem,12vw,13rem);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .filterbar {align-items:center;flex-wrap:wrap;gap:.65rem}
 .filterbar :is(input,select,button) {max-inline-size:100%;min-block-size:2.75rem}
 .filterbar .search-input {flex:1 1 12rem;min-inline-size:0}
