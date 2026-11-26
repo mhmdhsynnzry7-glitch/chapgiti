@@ -75,7 +75,7 @@ export async function checkPackagedBrowser(site, password, fileBytes) {
     const order = await pendingOrder;
     assert.equal(order.status(), 201);
     const {id:orderId} = await order.json();
-    await customer.getByRole("link", {name:"پیگیری سفارش", exact:true}).click();
+    await customer.getByRole("main").getByRole("link", {name:"پیگیری سفارش", exact:true}).click();
     await customer.waitForURL(site.origin + "/account/orders/" + orderId);
     await customer.getByText("سفارش آزمایشی مرورگر بسته", {exact:true}).first().waitFor();
     check(true, "signed-in customer submits an order PDF and opens the resulting order");
