@@ -1,8 +1,9 @@
 "use client";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { formatToman } from "@/lib/money";
 import { sessionFetch } from "@/lib/session-client";
 import Link from "next/link";
-import { useState, useEffect, useSyncExternalStore, useRef, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import {
   ArrowUpLeft,
   Upload,
@@ -87,13 +88,8 @@ export function QuotePanel({
     </aside>
   );
 }
-const subscribeToHydration = () => () => {};
 export function OrderForm(props: Parameters<typeof OrderFormFields>[0]) {
-  const hydrated = useSyncExternalStore(
-    subscribeToHydration,
-    () => true,
-    () => false,
-  );
+  const hydrated = useHydrated();
   const catalog = usePrintCatalog();
   if (!hydrated)
     return <p role="status">در حال بازیابی مشخصات محاسبه‌شده…</p>;

@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { backendApi,BackendError } from "./backend";
 export type CustomerProfile={id:string;phone:string;firstName:string;lastName:string;phoneVerified:boolean;hasAccount:boolean;isAdmin?:boolean};
+export function customerFullName({ firstName, lastName }: CustomerProfile) {
+  return [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+}
 export function customerIsReady(customer:CustomerProfile|null):customer is CustomerProfile{return !!(customer?.hasAccount&&customer.firstName&&customer.lastName);}
 export function safeCustomerNext(value?:string|string[]){
   if(typeof value!=="string"||value.length>5000||!value.startsWith("/")||value.startsWith("//")||/[\\\r\n]/.test(value))return "/account";

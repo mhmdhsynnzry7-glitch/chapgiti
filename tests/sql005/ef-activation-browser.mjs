@@ -23,12 +23,13 @@ for (const key of Object.keys(environment))
     )
   )
     delete environment[key];
+const development = process.env.CHAP_SQL_BROWSER_DEVELOPMENT === "true";
 const output = createWriteStream(artifactRoot + "/next-browser.log");
 const web = spawn(
   process.execPath,
   [
     path.resolve("frontend/node_modules/next/dist/bin/next"),
-    "start",
+    ...(development ? ["dev", "--webpack"] : ["start"]),
     "--hostname",
     "127.0.0.1",
     "--port",
@@ -40,7 +41,7 @@ const web = spawn(
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...environment,
-      NODE_ENV: "production",
+      NODE_ENV: development ? "development" : "production",
       CHAP_GITI_VERIFY_BUILD: "true",
       SITE_URL: base,
       DOTNET_API_URL: api,
@@ -48,6 +49,7 @@ const web = spawn(
     },
   },
 );
+console.log("SQL fixture Next "+(development ? "development" : "production verification")+" PID="+web.pid+" cwd="+path.resolve("frontend"));
 web.stdout.pipe(output);
 web.stderr.pipe(output);
 const runtime = [

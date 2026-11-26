@@ -1,3 +1,4 @@
+import { checkQuoteSummary, checkSignedInName } from "./customer-estimate-ui.mjs";
 import { acceptFinalConditions } from "./final-terms-browser.mjs";
 import {formatToman} from "../frontend/lib/money.ts";
 import { pdfFixture, submitPrintRequest } from "./pdf-fixture.mjs";
@@ -22,7 +23,19 @@ export async function requestToPrintChecks({browser,page,base,check,control,cust
   }
   const workflowFiles=[];
   try {
+    const staticSession = await browser.newContext({javaScriptEnabled:false});
+    try {
+      const staticPage = await staticSession.newPage();
+      for (const route of ["/customer", "/admin/login"]) {
+        await staticPage.goto(base + route);
+        const password = staticPage.locator("input[name=password]");
+        const form = staticPage.locator("form").filter({has:staticPage.locator("input[name=password]")});
+        check(await password.isDisabled() && await form.getAttribute("method") === "post" && await form.locator("button[type=submit]").isDisabled(),
+          "server-rendered " + route + " password form holds submission until the client is ready");
+      }
+    } finally { await staticSession.close(); }
     await customer.goto(base+'/');
+    check(await customer.locator(".customer-header-link").innerText()==="ورود", "guest header offers sign-in");
     const calculatorLink=customer.getByRole('navigation',{name:'منوی اصلی'}).getByRole('link',{name:/محاسبه/});
     await calculatorLink.click();
     await customer.locator('input[name=password]').waitFor();
@@ -34,11 +47,23 @@ export async function requestToPrintChecks({browser,page,base,check,control,cust
     await customer.locator('form').getByRole('button',{name:'ورود',exact:true}).click();
     await customer.locator('.book-calculator').waitFor();
     check(new URL(customer.url()).pathname==='/calculator','completed customer login resumes the protected calculator');
-    const calc=customer.waitForResponse(r=>r.url().endsWith('/api/quote')&&r.request().method()==='POST');
-    await customer.getByRole('button',{name:'محاسبه هزینه',exact:true}).click();const estimate=await(await calc).json();
-    const total = customer.getByRole("definition").filter({hasText:formatToman(estimate.total)}).last();
-    await total.waitFor();
-    check(estimate.total>=0 && await customer.getByText("برآورد کل",{exact:true}).isVisible() && (await total.innerText())===formatToman(estimate.total),'authenticated estimate is calculated by the backend and displayed as an approximation');
+    await checkSignedInName(customer, base, check);
+    async function calculate() {
+      const pending = customer.waitForResponse(r => r.url().endsWith("/api/quote") && r.request().method() === "POST");
+      await customer.getByRole("button", { name: "محاسبه هزینه", exact: true }).click();
+      const response = await pending;
+      assert.ok(response.ok());
+      const quote = await response.json();
+      await checkQuoteSummary(customer, quote, check);
+      return quote;
+    }
+    const quantity = customer.getByLabel("تعداد جلد (تیراژ)", { exact: true });
+    const originalQuantity = await quantity.inputValue();
+    await quantity.fill("1");
+    const singleCopy = await calculate();
+    check(singleCopy.discountPercent === 0, "a single copy explicitly shows no quantity discount");
+    await quantity.fill(originalQuantity);
+    const estimate = await calculate();
     const link=customer.getByRole('link',{name:'ارسال درخواست چاپ',exact:true});
     check(await link.getAttribute('href')==='/order?draft=1','request CTA carries only a safe draft flag, no contact/specification JSON');
     await link.click();await customer.waitForURL('**/order?draft=1');

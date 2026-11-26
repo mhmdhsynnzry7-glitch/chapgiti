@@ -1,7 +1,8 @@
+import { checkQuoteSummary } from "./customer-estimate-ui.mjs";
 import {pdfFixture} from "./pdf-fixture.mjs";
 import { mkdirSync } from "node:fs";
 export async function finalUatChecks({ page, base, check }) {
-  const folder = "docs/screenshots/final-uat";
+  const folder = process.env.CHAP_BROWSER_EVIDENCE || "docs/screenshots/final-uat";
   mkdirSync(folder, { recursive: true });
   const groups = page
     .getByRole("group", { name: "گروه تنظیمات چاپ" })
@@ -193,13 +194,12 @@ export async function finalUatChecks({ page, base, check }) {
   await page.keyboard.press("Escape");
   await picker.waitFor({state:"hidden"});
   check(await trim.evaluate(el=>el===document.activeElement),"keyboard dismissal returns focus to the catalog trigger");
+  const quoteResponse = page.waitForResponse(r => r.request().method() === "POST" && r.url().endsWith("/api/quote"));
   await page.getByRole("button", { name: "محاسبه هزینه", exact: true }).click();
-  await page.locator(".price-summary").waitFor();
-  check(
-    JSON.stringify(await page.locator(".price-summary dt").allTextContents()) === JSON.stringify(["قطع کتاب","تیراژ","خدمات تکمیلی هر جلد","قیمت هر جلد قبل از تخفیف","جمع مبلغ مشمول تخفیف","تخفیف تیراژ","قیمت هر جلد بعد از تخفیف","برآورد کل"]),
-    "calculator summarizes the selected cut, quantity, finishing, discount and estimate",
-  );
-  await page.screenshot({ path: folder + "/calculator-mobile.png" });
+  const quote = await quoteResponse;
+  check(quote.ok(), "mobile calculator receives an authenticated quote");
+  await checkQuoteSummary(page, await quote.json(), check);
+  await page.locator(".calculation-result").screenshot({ path: folder + "/calculator-mobile.png" });
   await page.goto(base+"/tickets");
   const subject=page.locator("#new-ticket input[name=subject]");
   await subject.fill("ک");

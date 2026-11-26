@@ -18,7 +18,15 @@ import type { CustomerProfile } from "@/lib/customer";
 import { validatePrintSpec } from "@/lib/print-spec";
 import { usePrintCatalog, CatalogStatus } from "./print-catalog-provider";
 import { catalogDefaults, attachCatalogIds } from "@/lib/print-catalog";
-type Calculation = { print: number; cover: number; binding: number; setup: number; extras: number; total: number; unit: number; subtotal: number; discountAmount: number; discountPercent: number; unitBeforeDiscount: number; spine: number };
+type Calculation = {
+  extras: number;
+  unitBeforeDiscount: number;
+  subtotal: number;
+  discountPercent: number;
+  unit: number;
+  total: number;
+  spine: number;
+};
 type CalculatorProps = {
   customer: CustomerProfile | null;
 };
@@ -166,12 +174,22 @@ function CalculatorFields({ customer }: CalculatorProps) {
                 <dl className="price-summary">
                   <div><dt>قطع کتاب</dt><dd>{options.bookSizes[spec.size]?.label}</dd></div>
                   <div><dt>تیراژ</dt><dd>{money(spec.quantity)} جلد</dd></div>
-                  <div><dt>خدمات تکمیلی هر جلد</dt><dd>{formatToman(result.extras)}{spec.details?.extras.length ? <small className="estimate-extras">{spec.details.extras.map(key=>options.finishingServices[key]?.label).filter(Boolean).join("، ")}</small> : null}</dd></div>
+                  <div>
+                    <dt>خدمات تکمیلی هر جلد</dt>
+                    <dd>
+                      {formatToman(result.extras)}
+                      {!!spec.details?.extras.length && (
+                        <small className="estimate-extras">
+                          {spec.details.extras.map(key => options.finishingServices[key]?.label).filter(Boolean).join("، ")}
+                        </small>
+                      )}
+                    </dd>
+                  </div>
                   <div><dt>قیمت هر جلد قبل از تخفیف</dt><dd>{formatToman(result.unitBeforeDiscount)}</dd></div>
                   <div><dt>جمع مبلغ مشمول تخفیف</dt><dd>{formatToman(result.subtotal)}</dd></div>
                   <div><dt>تخفیف تیراژ</dt><dd>{result.discountPercent ? result.discountPercent.toLocaleString("fa-IR")+"٪" : "بدون تخفیف"}</dd></div>
                   <div><dt>قیمت هر جلد بعد از تخفیف</dt><dd>{formatToman(result.unit)}</dd></div>
-                  <div><dt>برآورد کل</dt><dd><strong>{formatToman(result.total)}</strong></dd></div>
+                  <div><dt>مبلغ نهایی</dt><dd><strong>{formatToman(result.total)}</strong></dd></div>
                 </dl>
                 <div className="spine-estimate">
                   <BookOpen size={16} />

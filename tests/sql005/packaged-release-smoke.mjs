@@ -9,6 +9,8 @@ import https from "node:https";
 import http from "node:http";
 import {setTimeout as delay} from "node:timers/promises";
 import {pdfFixture} from "../pdf-fixture.mjs";
+import {forwardUpgrade} from "../loopback-upgrade.mjs";
+import {checkPackagedBrowser} from "./packaged-release-browser.mjs";
 
 const root = process.cwd();
 const manifest = JSON.parse(readFileSync(path.join(root,"RELEASE-MANIFEST.json"),"utf8"));
@@ -44,14 +46,23 @@ async function ready(url,child) {
 }
 const front=await origin(),api=await origin();
 assert.notEqual(front.port,api.port);
-// Emulate only TLS termination. Keep the normal production cookie and origin rules.
+// Use the actual release's SignalR rewrite rule for both negotiation and WebSocket upgrades.
+const iis = readFileSync(path.join(root, "deploy", "iis", "web.config"), "utf8");
+const rule = iis.match(/<rule name="Giti SignalR"[^>]*>\s*<match url="([^"]+)"/);
+assert.ok(rule, "packaged SignalR rewrite rule");
+const hubPath = new RegExp(rule[1], "i");
+const isHub = request => hubPath.test(new URL(request.url, "http://127.0.0.1").pathname.slice(1));
 const tls=https.createServer({key:readFileSync(0),cert:readFileSync(process.env.NODE_EXTRA_CA_CERTS)},(incoming,response)=>{
-  const proxy=http.request({hostname:front.hostname,port:front.port,path:incoming.url,method:incoming.method,headers:incoming.headers},remote=>{
+  const proxy=http.request({hostname:front.hostname,port:isHub(incoming) ? api.port : front.port,path:incoming.url,method:incoming.method,headers:incoming.headers},remote=>{
     response.writeHead(remote.statusCode,remote.headers);
     remote.pipe(response);
   });
   proxy.on("error",()=>{if(!response.headersSent)response.writeHead(502);response.end();});
   incoming.pipe(proxy);
+});
+tls.on("upgrade", (request, client, head) => {
+  if (isHub(request)) forwardUpgrade(request, client, head, api.port);
+  else client.destroy();
 });
 tls.listen(0,"127.0.0.1");await once(tls,"listening");
 const site=new URL("https://127.0.0.1:"+tls.address().port);
@@ -112,6 +123,7 @@ try {
   const nextDir=path.join(root,"frontend");
   const next=start(process.execPath,[path.join(nextDir,"server.js")],nextDir,frontEnv);
   await ready(new URL("/",site),next);
+  console.log("Packaged runtime "+JSON.stringify({backend:{pid:backend.pid,path:path.join(backendDir,"ChapGiti.Api.exe"),port:api.port},frontend:{pid:next.pid,path:path.join(nextDir,"server.js"),port:front.port},tlsPort:site.port}));
   for(const pathname of ["/","/services","/blog","/customer","/admin/login","/robots.txt"]) {
     const response=await fetch(new URL(pathname,site));assert.equal(response.status,200,pathname);
     const content=await response.text();
@@ -125,22 +137,17 @@ try {
   const other=await roleLogin("customer/login",{phone:"09100000002",password});
   await orderJourney(customer,admin,other);
 
-  // IIS routes these four real-time paths to Kestrel. Exercise its packaged WebSocket listener directly.
+  // Use the same TLS origin and packaged rewrite rule as the browser.
   notificationHub = new HubConnectionBuilder()
-    .withUrl(new URL("/api/realtime/admin/notifications",api).href,{headers:admin,transport:HttpTransportType.WebSockets})
+    .withUrl(new URL("/api/realtime/admin/notifications",site).href,{headers:admin,transport:HttpTransportType.WebSockets})
     .configureLogging(LogLevel.None)
     .build();
   const changed=[];
   notificationHub.on("Changed",event=>changed.push(event));
   await notificationHub.start();
   await jsonApi("admin/notifications/unread-count",admin);
-  const form=new FormData();
-  form.set("idempotencyKey",crypto.randomUUID());form.set("subject","پشتیبانی آزمایشی بسته");form.set("message","پیام آزمایشی برای بررسی پیوست نسخهٔ انتشار");
   const bytes=pdfFixture("release zip smoke");
-  form.set("files",new Blob([bytes],{type:"application/pdf"}),"release-smoke.pdf");
-  const created=await fetch(new URL("/api/tickets/attachments",site),{method:"POST",headers:customer,body:form});
-  assert.equal(created.status,201);
-  const {id}=await created.json();
+  const id=await checkPackagedBrowser(site,password,bytes);
   const detail=new URL("/api/admin/tickets/"+id,site);
   const thread=await (await fetch(detail,{headers:admin})).json();
   assert.equal(thread.messages.length,1);const [attachment]=thread.messages[0].attachments;

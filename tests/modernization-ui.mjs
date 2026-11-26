@@ -1,3 +1,4 @@
+import { checkSignedInName } from "./customer-estimate-ui.mjs";
 import { publicIndexingChecks } from "./public-indexing-ui.mjs";
 import { workflowModernizationChecks } from "./workflow-modernization-ui.mjs";
 import { finalUatChecks } from "./final-uat-ui.mjs";
@@ -266,12 +267,14 @@ try {
   await nameLayoutChecks(page, check, "customer profile");
   check(await page.locator("form input").count() === 2 && await page.locator("input[name=phone]").count() === 0, "the profile edit form only contains first and last name, without a mobile input");
   await page.locator("input[name=firstName]").fill("نام تازه");
+  await page.locator("input[name=lastName]").fill("آزمایشی نیک‌اندیش گیلانی");
   const profileSave = page.waitForResponse(response => response.url() === base + "/api/customer/profile" && response.request().method() === "PUT");
   await page.getByRole("button", { name: "ذخیره و ادامه", exact: true }).click();
   const savedProfile = await profileSave;
   check(savedProfile.ok() && JSON.stringify(Object.keys(savedProfile.request().postDataJSON()).sort()) === JSON.stringify(["firstName", "lastName"]), "profile updates submit only first and last name without a mobile number");
   await page.waitForURL(url => url.pathname === "/account");
   check((await page.locator("h1").innerText()).includes("نام تازه") && await page.evaluate(async () => (await (await fetch("/api/customer/me")).json()).phone) === signupPhone, "customer name updates succeed while preserving the authenticated mobile number");
+  await checkSignedInName(page, base, check);
   await page.goto(base + "/admin");
   await page.getByRole("heading", { name: "ورود مدیریت چاپ گیتی" }).waitFor();
   check(await page.evaluate(async () => (await fetch("/api/admin/users")).status) === 401, "customer authentication cannot authorize admin UI or backend");
