@@ -23,6 +23,17 @@ export async function requestToPrintChecks({browser,page,base,check,control,cust
   }
   const workflowFiles=[];
   try {
+    const staticSession = await browser.newContext({javaScriptEnabled:false});
+    try {
+      const staticPage = await staticSession.newPage();
+      for (const route of ["/customer", "/admin/login"]) {
+        await staticPage.goto(base + route);
+        const password = staticPage.locator("input[name=password]");
+        const form = staticPage.locator("form").filter({has:staticPage.locator("input[name=password]")});
+        check(await password.isDisabled() && await form.getAttribute("method") === "post" && await form.locator("button[type=submit]").isDisabled(),
+          "server-rendered " + route + " password form holds submission until the client is ready");
+      }
+    } finally { await staticSession.close(); }
     await customer.goto(base+'/');
     check(await customer.locator(".customer-header-link").innerText()==="ورود", "guest header offers sign-in");
     const calculatorLink=customer.getByRole('navigation',{name:'منوی اصلی'}).getByRole('link',{name:/محاسبه/});

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import http from "node:http";
+import {forwardUpgrade} from "./loopback-upgrade.mjs";
 import {createHash, randomBytes} from "node:crypto";
 import {spawnSync} from "node:child_process";
 import {once} from "node:events";
@@ -29,16 +30,7 @@ const proxy=http.createServer((req,res)=>{
   });
   relay.on("error",()=>res.destroy());req.pipe(relay);
 });
-proxy.on("upgrade",(req,socket,head)=>{
-  const relay=http.request({host:"127.0.0.1",port:target(req.url),path:req.url,headers:req.headers});
-  relay.on("upgrade",(incoming,remote,extra)=>{
-    socket.write("HTTP/1.1 101 Switching Protocols\r\n"+Object.entries(incoming.headers).map(([key,value])=>key+": "+value).join("\r\n")+"\r\n\r\n");
-    if(head.length) remote.write(head);if(extra.length) socket.write(extra);
-    remote.pipe(socket);socket.pipe(remote);
-    socket.on("error",()=>remote.destroy());remote.on("error",()=>socket.destroy());
-  });
-  relay.on("response",()=>socket.destroy());relay.on("error",()=>socket.destroy());relay.end();
-});
+proxy.on("upgrade", (req, socket, head) => forwardUpgrade(req, socket, head, target(req.url)));
 try {
   const port=await listen(proxy),base="http://127.0.0.1:"+port;
   for (const scope of ["customer","admin"]) for(const kind of ["notifications","support"]) {

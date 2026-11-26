@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { pdfFixture } from "../pdf-fixture.mjs";
+import { checkSignedInName, checkQuoteSummary } from "../customer-estimate-ui.mjs";
 import { acceptFinalConditions } from "../final-terms-browser.mjs";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ipUgAAAAASUVORK5CYII=","base64");
@@ -134,8 +135,13 @@ export async function ticketReleaseBrowser({browser,base,check,artifacts}) {
     await customer.locator("input[name=firstName]").fill("آزمایش");await customer.locator("input[name=lastName]").fill("چاپ گیتی");
     await customer.locator("input[name=password]").fill(pass);await customer.locator("input[name=confirmation]").fill(pass);
     await customer.getByRole("button",{name:"تکمیل ثبت‌نام",exact:true}).click();await customer.locator(".auth-success").waitFor();
-    async function login(){
-      await customer.goto(base+"/customer?change=1&next=%2Faccount");
+    async function login(fromHome=false){
+      if (fromHome) {
+        // Wait for the signed-out layout to finish replacing the authenticated header.
+        await customer.getByRole("link",{name:"ورود",exact:true}).and(customer.locator(".customer-header-link")).click();
+      } else {
+        await customer.goto(base+"/customer?change=1&next=%2Faccount");
+      }
       await customer.locator("input[name=phone]").fill(phone);await customer.locator("input[name=password]").fill(pass);
       await customer.locator("form").getByRole("button",{name:"ورود",exact:true}).click();await customer.waitForURL(base+"/account");
     }
@@ -149,14 +155,18 @@ export async function ticketReleaseBrowser({browser,base,check,artifacts}) {
     }});
     assert.equal(stale.status(),401);await guest.context().clearCookies();
     check(true,"revoked SQL customer session cannot upload an attachment or create a ticket");
-    await login();
+    await login(true);
+    await checkSignedInName(customer, base, check);
     await admin.goto(base+"/admin/login");await admin.locator("input[name=password]").fill("Isolated.Sql@2026");
     await admin.getByRole("button",{name:"ورود به مدیریت",exact:true}).click();await admin.waitForURL(base+"/admin");
     assert.equal((await admin.request.get(base+"/api/customer/me")).status(),401);
     assert.equal((await customer.request.get(base+"/api/auth/me")).status(),401);
     check(true,"disposable SQL registration, OTP transport, completed profile, logout and independent customer/admin logins");
     await customer.goto(base+"/calculator");const calc=mutation(customer,"/api/quote");
-    await customer.getByRole("button",{name:"محاسبه هزینه",exact:true}).click();assert.equal((await calc).status(),200);
+    await customer.getByRole("button",{name:"محاسبه هزینه",exact:true}).click();
+    const estimateResponse = await calc;
+    assert.equal(estimateResponse.status(), 200);
+    await checkQuoteSummary(customer, await estimateResponse.json(), check);
     await customer.getByRole("link",{name:"ارسال درخواست چاپ",exact:true}).click();
     await customer.locator("input[name=title]").fill("پذیرش نهایی چاپ با فایل اصلاحیه");
     const original=pdfFixture("starting version");

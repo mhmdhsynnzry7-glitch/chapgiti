@@ -4,7 +4,15 @@ import { formatToman } from "../frontend/lib/money.ts";
 export async function checkQuoteSummary(page, quote, check) {
   const summary = page.locator(".price-summary");
   await summary.locator("strong").filter({ hasText: formatToman(quote.total) }).waitFor();
+  const cut = await page.getByLabel("قطع کتاب", { exact: true }).innerText();
+  const quantity = Number(await page.getByLabel("تعداد جلد (تیراژ)", { exact: true }).inputValue());
+  const extras = await page.locator(".finishing-options input:checked").evaluateAll(inputs => inputs.map(input => input.getAttribute("aria-label")));
+  const finishingNames = await summary.locator(".estimate-extras").allTextContents();
+  assert.deepEqual(finishingNames.join("، ").split("، ").filter(Boolean).sort(), extras.sort());
   const expected = [
+    ["قطع کتاب", cut.trim()],
+    ["تیراژ", quantity.toLocaleString("fa-IR") + " جلد"],
+    ["خدمات تکمیلی هر جلد", formatToman(quote.extras) + finishingNames.join("")],
     ["قیمت هر جلد قبل از تخفیف", formatToman(quote.unitBeforeDiscount)],
     ["جمع مبلغ مشمول تخفیف", formatToman(quote.subtotal)],
     ["تخفیف تیراژ", quote.discountPercent ? quote.discountPercent.toLocaleString("fa-IR") + "٪" : "بدون تخفیف"],
@@ -14,7 +22,7 @@ export async function checkQuoteSummary(page, quote, check) {
   const rows = await summary.locator(":scope > div").evaluateAll(items =>
     items.map(item => [item.querySelector("dt").textContent, item.querySelector("dd").textContent]));
   assert.deepEqual(rows, expected);
-  check(await page.locator(".spine-estimate").isVisible(), "five ordered price rows match the quote API and spine estimate remains visible");
+  check(await page.locator(".spine-estimate").isVisible(), "eight ordered estimate rows match the active inputs and quote API, with the spine estimate visible");
 }
 
 export async function checkSignedInName(page, base, check) {

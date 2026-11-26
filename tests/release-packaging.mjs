@@ -171,7 +171,7 @@ try {
   check(!/--migrate|sql005|sqlFixture|test-published|SOURCE-MANIFEST|--import-stdin|db-setup\.mjs/.test(packedCode.replace('"db:setup":"node scripts/db-setup.mjs"', '')),"packaging has no SQL, import, provisioning or source archive execution");
   const localInputs=path.join(scratch,"inputs");
   for(const n of ["app","components","hooks","lib","public","scripts"]) mkdirSync(path.join(localInputs,"frontend",n),{recursive:true});
-  for(const n of ["package.json","package-lock.json","next.config.ts","postcss.config.mjs","tsconfig.json","eslint.config.mjs"])writeFileSync(path.join(localInputs,"frontend",n),"fixture");
+  for(const n of ["package.json","package-lock.json","next.config.ts","postcss.config.mjs","tsconfig.json","eslint.config.mjs","components.json"])writeFileSync(path.join(localInputs,"frontend",n),"fixture");
   const output=path.join(localInputs,"frontend/publish");mkdirSync(output);writeFileSync(path.join(output,"server.js"),"old");
   mkdirSync(path.join(localInputs,"scripts"));
   for(const name of ["release-source.mjs","release-files.mjs"]) writeFileSync(path.join(localInputs,"scripts",name),"fixture");

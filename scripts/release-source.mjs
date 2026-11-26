@@ -8,7 +8,7 @@ import { allowedReleaseFile, configuredSecrets, scanFiles, sha256 } from "./rele
 const top = [".gitignore", ".npmrc", ".env.example", "AGENTS.md", "README.md", "package.json", "package-lock.json", ".config/dotnet-tools.json"];
 const projects = ["Api", "Application", "Domain", "Infrastructure"].map(name => "backend/ChapGiti." + name);
 const front = ["app", "components", "hooks", "lib", "public", "scripts"].map(name => "frontend/" + name);
-const frontConfig = ["package.json", "package-lock.json", "next.config.ts", "postcss.config.mjs", "tsconfig.json", "eslint.config.mjs"];
+const frontConfig = ["package.json", "package-lock.json", "next.config.ts", "postcss.config.mjs", "tsconfig.json", "eslint.config.mjs", "components.json"];
 const skills = ["backend", "frontend", "database", "testing"].map(area => ".agents/skills/chap-" + area + "/SKILL.md");
 const optionalBuildConfig = ["global.json", "NuGet.Config", "Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props",
   "backend/Directory.Build.targets", "backend/Directory.Packages.props", "backend/NuGet.Config", "backend/global.json"];

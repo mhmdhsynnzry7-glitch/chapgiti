@@ -56,7 +56,7 @@ internal static class PackagedReleaseAcceptance
                 await process.StandardInput.WriteAsync(tlsKey.ExportPkcs8PrivateKeyPem());
                 process.StandardInput.Close();
             }
-            try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(2)); }
+            try { await process.WaitForExitAsync().WaitAsync(serve ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(2)); }
             catch { if (!process.HasExited) process.Kill(entireProcessTree:true); throw; }
             if (process.ExitCode!=0) throw new InvalidOperationException("Packaged acceptance failed: "+Path.GetFileName(command)+" "+process.ExitCode);
         }
@@ -74,10 +74,10 @@ internal static class PackagedReleaseAcceptance
                    (SELECT COUNT(*) FROM dbo.Files) AS order_files,
                    (SELECT COUNT(*) FROM dbo.Ticket_Attachments) AS ticket_files
             """);
-        if (saved is null || Convert.ToInt32(saved["orders"]) != 1 ||
-            Convert.ToInt32(saved["order_files"]) != 1 || Convert.ToInt32(saved["ticket_files"]) != 1)
+        if (saved is null || Convert.ToInt32(saved["orders"]) != 2 ||
+            Convert.ToInt32(saved["order_files"]) != 2 || Convert.ToInt32(saved["ticket_files"]) != 1)
             throw new InvalidOperationException("Unexpected order or file counts in the isolated release database.");
-        Console.WriteLine("PASS packaged binaries persist one order, its PDF and the initial ticket attachment; final schema check passed.");
+        Console.WriteLine("PASS packaged binaries persist the API and browser orders, their PDFs and the initial browser ticket attachment; final schema check passed.");
         return 0;
     }
 }

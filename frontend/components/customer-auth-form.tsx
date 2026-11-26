@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Smartphone, ShieldCheck } from "lucide-react";
 import NewPasswordFields from "./new-password-fields";
@@ -26,7 +27,9 @@ export default function CustomerAuthForm({ next, recovery, initialMethod = "pass
   const [grant, setGrant] = useState<PasswordRecoveryGrant | null>(null);
   const [registrationGrant, setRegistrationGrant] = useState<RegistrationGrant | null>(null);
   const [now, setNow] = useState(0), [resendAt, setResendAt] = useState(0);
-  const [busy, setBusy] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const hydrated = useHydrated();
+  const [pending, setBusy] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const busy = !hydrated || pending;
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const sending = useRef(false), codeInput = useRef<HTMLInputElement>(null);
   const loginUrl = "/customer?next=" + encodeURIComponent(next);
@@ -150,7 +153,7 @@ export default function CustomerAuthForm({ next, recovery, initialMethod = "pass
       <ShieldCheck size={42} aria-hidden="true" />
       {recovering ? <Link prefetch={false} className="button button-full" href={loginUrl}>ورود<ArrowLeft size={18} /></Link>
         : <button type="button" disabled={busy} className="button button-full" onClick={() => switchView("password")}>ورود<ArrowLeft size={18} /></button>}
-    </div> : <form key={view} onSubmit={submit} aria-busy={busy}
+    </div> : <form key={view} method="post" onSubmit={submit} aria-busy={busy}
       onInput={event => { if (event.target instanceof HTMLInputElement) event.target.setCustomValidity(""); }}
       onInvalid={event => {
         if (!(event.target instanceof HTMLInputElement)) return;
